@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Usuarios registrados</title>
+  <link rel="stylesheet" href="css/bootstrap.css"/>
+  <link href="css/style.css" rel="stylesheet"/>
+</head>
+<body>
+  <div class="container" style="padding:40px">
+    <h2>Usuarios registrados</h2>
+    <div id="message" style="margin-top:10px"></div>
+    <table class="table table-striped" id="users-table" style="margin-top:20px; display:none">
+      <thead>
+        <tr><th>ID</th><th>Nombre</th><th>Correo</th><th>Admin</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <a href="login.html" id="login-link" style="display:none">Inicia sesión</a>
+  </div>
+
+  <script>
+    async function loadUsers(){
+      const msg = document.getElementById('message');
+      try{
+        const res = await fetch('/api/users');
+        if(res.status === 401){
+          msg.textContent = 'Debes iniciar sesión para ver los usuarios.';
+          document.getElementById('login-link').style.display = 'inline';
+          return;
+        }
+        if(res.status === 403){
+          msg.textContent = 'No tienes permisos de administrador.';
+          return;
+        }
+        const data = await res.json();
+        if(!data.ok){ msg.textContent = data.message || 'Error'; return; }
+        const table = document.getElementById('users-table');
+        const tbody = table.querySelector('tbody');
+        tbody.innerHTML = '';
+        data.users.forEach(u => {
+          const tr = document.createElement('tr');
+          tr.dataset.userId = u.id;
+          tr.innerHTML = `
+            <td>${u.id}</td>
+            <td class="user-name">${u.name || ''}</td>
+            <td>${u.email}</td>
+            <td>${u.isAdmin ? 'Sí' : 'No'}</td>
+            <td>
+              <button class="btn btn-sm btn-primary btn-edit">Editar</button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+        // attach edit handlers
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const tr = e.target.closest('tr');
+            const id = tr.dataset.userId;
+            showEditRow(tr, id);
+          });
+        });
+        table.style.display = '';
+      } catch(e){
+        msg.textContent = 'Error de conexión.';
+      }
+    }
+      loadUsers();
+    function showEditRow(tr, id){
+      const nameCell = tr.querySelector('.user-name');
+      const currentName = nameCell.textContent || '';
+      const email = tr.children[2].textContent;
+      const isAdminTextBefore = tr.children[3].textContent;
+      // create edit inputs (email editable)
+      tr.innerHTML = `
+        <td>${id}</td>
+        <td><input class="form-control input-sm edit-name" value="${currentName}"></td>
+        <td><input class="form-control input-sm edit-email" value="${email}"></td>
+        <td>
+          <select class="form-control form-control-sm edit-admin">
+            <option value="0">No</option>
+            <option value="1">Sí</option>
+          </select>
+        </td>
+        <td>
+          <input type="password" placeholder="Nueva contraseña (vacío = sin cambio)" class="form-control form-control-sm edit-pass" style="display:inline-block;width:60%" />
+          <button class="btn btn-sm btn-success btn-save">Guardar</button>
+          <button class="btn btn-sm btn-secondary btn-cancel">Cancelar</button>
+        </td>`;
+      // set current admin value
+      const select = tr.querySelector('.edit-admin');
+      select.value = (isAdminTextBefore && isAdminTextBefore.trim() === 'Sí') ? '1' : '0';
+      tr.querySelector('.btn-cancel').addEventListener('click', () => loadUsers());
+      tr.querySelector('.btn-save').addEventListener('click', async () => {
+          const newName = tr.querySelector('.edit-name').value.trim();
+          const newEmail = tr.querySelector('.edit-email').value.trim();
+          const newPass = tr.querySelector('.edit-pass').value;
+          const newAdmin = tr.querySelector('.edit-admin').value === '1';
+          // store pending edit globally and show confirmation modal
+          window.pendingEdit = { id, newName, newEmail, newPass, newAdmin };
+          if(window.$ && $('#confirmEditModal')){
+            $('#confirmEditModal').modal('show');
+          } else {
+            // fallback to confirm
+            if(confirm('Confirmar guardar cambios?')) performPendingEdit();
+          }
+      });
+    }
+      async function performPendingEdit(){
+        const p = window.pendingEdit;
+        if(!p) return;
+        try{
+          const res = await fetch('/api/users/' + p.id, {
+            method: 'PUT',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ name: p.newName, email: p.newEmail, password: p.newPass, isAdmin: p.newAdmin })
+          });
+          const data = await res.json();
+          if(data.ok){
+            showMessage('Cambios guardados correctamente.', 'success');
+            loadUsers();
+          } else {
+            showMessage(data.message || 'Error al guardar', 'danger');
+          }
+        } catch(e){ showMessage('Error de conexión', 'danger'); }
+        window.pendingEdit = null;
+      }
+      // modal confirm handler
+      document.addEventListener('DOMContentLoaded', () => {
+        if(window.$ && $('#confirmEditModal')){
+          $('#confirmEditModal .confirm-edit').on('click', function(){
+            $('#confirmEditModal').modal('hide');
+            performPendingEdit();
+          });
+        }
+      });
+
+      function showMessage(text, type){
+        const msg = document.getElementById('message');
+        msg.innerHTML = `<div class="alert alert-${type}" role="alert">${text}</div>`;
+        setTimeout(()=>{ msg.innerHTML = ''; }, 4000);
+      }
+  </script>
+  <!-- Confirmation modal -->
+  <div class="modal fade" id="confirmEditModal" tabindex="-1" role="dialog" aria-labelledby="confirmEditModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmEditModalLabel">Confirmar cambios</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">¿Deseas guardar los cambios en el usuario seleccionado?</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary confirm-edit">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

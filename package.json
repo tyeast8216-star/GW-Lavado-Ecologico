@@ -1,0 +1,19 @@
+{
+  "name": "gw-login-server",
+  "version": "1.0.0",
+  "description": "Servidor Node.js para login sencillo",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.4.2",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "multer": "^2.1.1",
+    "nodemailer": "^6.10.1",
+    "sqlite3": "^5.1.6",
+    "stripe": "^12.18.0"
+  }
+}

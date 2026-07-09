@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pago completado</title>
+  <link rel="stylesheet" href="css/bootstrap.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .order-card { max-width:900px; margin:40px auto; }
+    .product-specs td { vertical-align: middle; }
+    .product-row img { max-width:80px; max-height:80px; }
+  </style>
+</head>
+<body>
+  <div class="container order-card">
+    <div class="card">
+      <div class="card-body text-center">
+        <h1 class="text-success">Pago completado</h1>
+        <p id="orderMessage">Gracias por tu compra. Tu pedido ha sido procesado correctamente.</p>
+        <a id="continuarBtn" class="btn btn-primary mb-3">Ir a la tienda</a>
+        <hr>
+        <h5>Resumen del pedido</h5>
+        <p><strong>Número de pedido:</strong> <span id="orderId">—</span></p>
+        <p><strong>Fecha:</strong> <span id="orderDate">—</span></p>
+
+        <p><strong>Producto(s):</strong> <span id="productName">—</span></p>
+
+        <div id="productsList" class="mb-3"></div>
+
+        <table class="table product-specs">
+          <tbody>
+            <tr>
+              <th scope="row">Subtotal</th>
+              <td id="subtotal">—</td>
+            </tr>
+            <tr>
+              <th scope="row">Envío</th>
+              <td id="shipping">—</td>
+            </tr>
+            <tr>
+              <th scope="row">Total</th>
+              <td id="total">—</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h5>Datos de facturación</h5>
+        <p><strong>Nombre:</strong> <span id="customerName">—</span></p>
+        <p><strong>Correo:</strong> <span id="customerEmail">—</span></p>
+        <p><strong>Método de pago:</strong> <span id="paymentMethod">—</span></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/payment-complete.js"></script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mi Cuenta - GW Lavado Ecologico</title>
+  <link rel="icon" type="image/x-icon" href="/images/logogwlavadoeco.png">
+  <link rel="stylesheet" href="css/bootstrap.css" />
+  <link href="css/style.css" rel="stylesheet" />
+  <style>
+    :root{ --accent:#007bff; --bg:#f6f8fb; --card:#fff; --muted:#6c757d }
+    body{ background:var(--bg); font-family: 'Poppins', sans-serif }
+    .topbar{ background:#fff; border-bottom:1px solid #ececec; padding:10px 20px; display:flex; align-items:center; justify-content:space-between }
+    .brand{ display:flex; align-items:center; gap:12px }
+    .layout{ max-width:1100px; margin:20px auto; display:grid; grid-template-columns: 1fr 340px; gap:20px }
+    .main-card, .side-card{ background:var(--card); padding:16px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.04) }
+    .profile-form label{ font-size:13px; color:var(--muted) }
+    .purchases-list { list-style:none; padding:0; margin:0 }
+    .purchase-item{ padding:10px; border-bottom:1px solid #f1f1f1 }
+    @media(max-width:900px){ .layout{ grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a href="index.html"><img src="images/logogwlavadoeco.png" alt="logo" width="48" height="48"></a>
+      <div>
+        <div style="font-weight:600">GW Lavado Ecologico</div>
+        <div style="font-size:12px;color:var(--muted)">Mi cuenta</div>
+      </div>
+    </div>
+    <div>
+      <a href="/logout" class="btn btn-outline-secondary">Cerrar sesión</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="main-card">
+      <h3>Perfil</h3>
+      <p id="profile-msg" style="color:var(--muted)"></p>
+      <form id="profile-form" class="profile-form">
+        <div class="form-group">
+          <label>Nombre</label>
+          <div id="pf-name-text" class="form-control-plaintext" style="padding:8px 12px;border:1px solid #e9ecef;border-radius:4px;background:#fff"></div>
+        </div>
+        <div class="form-group">
+          <label>Correo</label>
+          <div id="pf-email-container">
+            <div style="display:flex;gap:8px;align-items:center">
+              <div id="pf-email-text" style="flex:1;color:var(--muted)"></div>
+              <button type="button" id="pf-email-edit" class="btn btn-sm btn-outline-primary">Editar</button>
+            </div>
+            <input class="form-control" id="pf-email-input" style="display:none;margin-top:8px" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Teléfono</label>
+          <div id="pf-phone-container">
+            <div style="display:flex;gap:8px;align-items:center">
+              <div id="pf-phone-text" style="flex:1;color:var(--muted)"></div>
+              <button type="button" id="pf-phone-edit" class="btn btn-sm btn-outline-primary">Editar</button>
+            </div>
+            <div id="pf-phone-edit-area" style="display:none;margin-top:8px;display:flex;gap:8px;align-items:center">
+              <div style="flex:0 0 180px">
+                <input type="hidden" id="pf-phone-code" name="pf-phone-code" value="+34">
+                <div class="phone-select" id="pf-phone-select">
+                  <button type="button" class="phone-select-btn" aria-haspopup="listbox" aria-expanded="false">
+                    <img src="https://flagcdn.com/24x18/es.png" alt="ES" loading="lazy">
+                    <span class="phone-text">España (+34)</span>
+                  </button>
+                  <ul class="phone-select-list" role="listbox" aria-labelledby="pf-phone-select">
+                    <!-- Populated dynamically -->
+                  </ul>
+                </div>
+              </div>
+              <div style="flex:1">
+                <div class="input-with-icon phone-field">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.84 19.84 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.84 19.84 0 013.08 4.18 2 2 0 015 2h3a2 2 0 012 1.72c.12 1.05.38 2.08.76 3.05a2 2 0 01-.45 2.11L9.91 10.91a16 16 0 006 6l1.03-1.03a2 2 0 012.11-.45c.97.38 2 .64 3.05.76A2 2 0 0122 16.92z" stroke="#6b7280" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <input id="pf-phone-input" class="form-control" placeholder="600 000 000" style="flex:1" />
+                </div>
+              </div>
+            </div>
+            <div id="pf-phone-error" style="color:#b00020;margin-top:6px;display:none;font-size:13px"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nueva contraseña (dejar en blanco para no cambiar)</label>
+          <input type="password" class="form-control" id="pf-password" />
+        </div>
+        <div style="margin-top:10px">
+          <button id="save-profile" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+
+      <div style="margin-top:20px">
+        <h4>Mis compras</h4>
+        <div id="purchases-msg" style="color:var(--muted);margin-bottom:8px"></div>
+        <ul class="purchases-list" id="purchases-list">
+        </ul>
+      </div>
+    </div>
+
+    <aside class="side-card">
+      <h5>Menú</h5>
+      <nav style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <a href="user-dashboard.html" class="btn btn-sm btn-light">Mi perfil</a>
+        <a href="store.html" class="btn btn-sm btn-light">Tienda</a>
+        <a href="cursos.html" class="btn btn-sm btn-light">Cursos</a>
+        <a href="cart.html" class="btn btn-sm btn-light">Carrito</a>
+        <a href="/" class="btn btn-sm btn-light">Volver al sitio</a>
+      </nav>
+    </aside>
+  </div>
+
+  <script src="js/jquery-3.4.1.min.js"></script>
+  <script src="js/bootstrap.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="https://unpkg.com/libphonenumber-js@1.9.48/bundle/libphonenumber-js.min.js"></script>
+  <script src="js/toast.js"></script>
+  <!-- Receipt modal -->
+  <div class="modal fade" id="receiptModal" tabindex="-1" role="dialog" aria-labelledby="receiptModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="receiptModalLabel">Recibo</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body" id="receiptModalBody">
+          <!-- Contenido del recibo inyectado dinámicamente -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+          <button type="button" id="receiptDownloadBtn" class="btn btn-outline-primary">Descargar PDF</button>
+          <button type="button" id="receiptPrintBtn" class="btn btn-primary">Imprimir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/phone-select.js"></script>
+  <script src="js/user-dashboard.js"></script>
+</body>
+</html>
