@@ -35,8 +35,69 @@
   flex-shrink: 0;
 }
 @media (max-width: 768px) {
-  .topbar-info { padding: 10px 16px; }
-  .topbar-content { font-size: 13px; text-align: center; }
+  .topbar-info { display: none !important; }
+  .header_section .container-fluid {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .custom_nav-container {
+    padding: 4px 0;
+    min-height: auto;
+    align-items: center;
+  }
+  .custom_nav-container .navbar-brand {
+    margin: 0;
+  }
+  .custom_nav-container .navbar-brand img {
+    width: 40px;
+    height: 40px;
+  }
+  .custom_nav-container .navbar-toggler {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 12px;
+    background: #fff;
+    padding: 0.35rem 0.45rem;
+    margin-right: 0;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .custom_nav-container .navbar-toggler .navbar-toggler-icon {
+    display: inline-block;
+    width: 24px;
+    height: 18px;
+    background-image: none !important;
+    background: #111;
+    border-radius: 1px;
+    position: relative;
+  }
+  .custom_nav-container .navbar-toggler .navbar-toggler-icon::before,
+  .custom_nav-container .navbar-toggler .navbar-toggler-icon::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #111;
+    border-radius: 1px;
+  }
+  .custom_nav-container .navbar-toggler .navbar-toggler-icon::before { top: 0; }
+  .custom_nav-container .navbar-toggler .navbar-toggler-icon::after { bottom: 0; }
+  .custom_nav-container .navbar-collapse { padding: 0 12px; }
+  .custom_nav-container .navbar-collapse .d-flex { gap: 8px; }
+  .custom_nav-container .navbar-nav { flex-wrap: wrap; }
+  .topbar-content span, .topbar-content a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: normal;
+  }
+  .topbar-content svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 
 /* Login section styles */
@@ -821,16 +882,39 @@ a:focus {
 
 .custom_nav-container .navbar-toggler {
   outline: none;
+  border: none;
+  background: transparent;
+  padding: 0.35rem;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .custom_nav-container .navbar-toggler .navbar-toggler-icon {
-  background-image: url(../images/menu.png);
-  background-size: 24px;
-  background-repeat: no-repeat;
-  background-position: center;
   display: inline-block;
-  width: 40px;
-  height: 40px;
+  width: 24px;
+  height: 2px;
+  background: #111;
+  position: relative;
+  border-radius: 1px;
+}
+
+.custom_nav-container .navbar-toggler .navbar-toggler-icon::before,
+.custom_nav-container .navbar-toggler .navbar-toggler-icon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #111;
+  border-radius: 1px;
+}
+
+.custom_nav-container .navbar-toggler .navbar-toggler-icon::before {
+  top: -7px;
+}
+
+.custom_nav-container .navbar-toggler .navbar-toggler-icon::after {
+  top: 7px;
 }
 
 /*end header section*/
@@ -936,13 +1020,19 @@ a:focus {
 @media (max-width: 991.98px) {
   /* Navbar adjustments: stack menu under brand and keep cart visible */
   .navbar-brand { margin-right: 0.5rem; }
-  .custom_nav-container .navbar-collapse { padding: 0 12px; }
-  .custom_nav-container .navbar-collapse .d-flex { flex-direction: column; align-items: flex-start; gap: 8px; }
-  /* hide inline nav links on small screens: use the side-drawer to avoid overflow */
-  .custom_nav-container .navbar-nav { display: none !important; }
-  .custom_nav-container .navbar-nav .nav-link { text-align: left; padding: 10px 12px; }
+  .custom_nav-container .navbar-collapse { padding: 0 12px; width: 100%; }
+  .custom_nav-container .navbar-collapse .d-flex { flex-direction: column; align-items: stretch; gap: 10px; }
+  .custom_nav-container .navbar-toggler { align-self: flex-end; margin-right: 0; }
+  .custom_nav-container .navbar-nav { display: flex !important; flex-direction: column; width: 100%; gap: 6px; }
+  .custom_nav-container .navbar-nav .nav-item { width: 100%; }
+  .custom_nav-container .navbar-nav .nav-link { text-align: left; padding: 10px 14px; width: 100%; border-radius: 10px; color: #111 !important; background: #f7f7f7; }
+  .custom_nav-container .navbar-collapse.collapse { display: none !important; }
+  .custom_nav-container .navbar-collapse.collapse.show { display: block !important; }
   .nav-cart { margin-top: 6px; }
   .logo-slider { margin-left: 0; }
+  .custom_nav-container { justify-content: space-between !important; }
+  .custom_nav-container .navbar-brand { margin-left: 0 !important; margin-right: auto !important; }
+  .custom_nav-container .navbar-toggler { margin-left: auto; }
 }
 
 @media (max-width: 767.98px) {
@@ -967,9 +1057,9 @@ a:focus {
 
 /* iPad / small desktop tweaks (portrait tablets) */
 @media (min-width: 768px) and (max-width: 991.98px) {
-  .custom_nav-container .navbar-collapse { display: flex !important; }
+  .custom_nav-container .navbar-collapse { padding: 0 12px; }
   .custom_nav-container .navbar-collapse .d-flex { flex-direction: row; justify-content: space-between; width: 100%; }
-  .custom_nav-container .navbar-nav { flex-direction: row; gap: 6px; }
+  .custom_nav-container .navbar-nav { flex-direction: row; gap: 6px; flex-wrap: wrap; }
   .custom_nav-container .navbar-nav .nav-link { padding: 8px 10px; }
   .product-card img { max-height: 200px; }
 }
@@ -1135,6 +1225,33 @@ a:focus {
 
 .btn-whatsapp:hover {
   background-color: #156dae;
+}
+
+.whatsapp-float {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #25d366;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.18);
+  z-index: 11000;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.whatsapp-float:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 44px rgba(0,0,0,0.22);
+}
+
+.whatsapp-float .fab {
+  font-size: 22px;
 }
 
 /* --- ESTILOS DEL TELÉFONO (LADO DERECHO) --- */
@@ -1860,6 +1977,24 @@ a:focus {
   z-index: 99999;
   background: white;
   transition: background-color 240ms ease, -webkit-backdrop-filter 240ms ease;
+}
+
+@media (max-width: 768px) {
+  .header_section {
+    height: 70px !important;
+    padding-top: 0 !important;
+  }
+  .custom_nav-container {
+    padding: 2px 0 !important;
+  }
+  .custom_nav-container .navbar-brand img {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .custom_nav-container .navbar-toggler {
+    min-width: 40px !important;
+    min-height: 40px !important;
+  }
 }
 
 .header_section2 {
