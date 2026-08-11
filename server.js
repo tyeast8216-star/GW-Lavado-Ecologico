@@ -169,10 +169,11 @@ app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const emailTrim = String(email || '').trim().toLowerCase();
   if (!emailTrim || !password) return sendError(res, 'Faltan credenciales', 400);
-  db.get('SELECT id,name,email,passwordHash,isAdmin FROM users WHERE email = ?', [emailTrim], (err, row) => {
+  db.get('SELECT id,name,email,passwordHash AS "passwordHash",isAdmin FROM users WHERE email = ?', [emailTrim], (err, row) => {
     if (err) return sendServerError(res, 'Error al verificar las credenciales', err);
     if (!row) return sendError(res, 'Usuario o contraseña incorrectos', 401);
-    const match = bcrypt.compareSync(password, row.passwordHash);
+    const storedHash = row.passwordHash || row.passwordhash || row.password_hash;
+    const match = bcrypt.compareSync(password, storedHash);
     if (!match) return sendError(res, 'Usuario o contraseña incorrectos', 401);
     req.session.user = { id: row.id, name: row.name, email: row.email, isAdmin: !!row.isAdmin };
     sendSuccess(res);
