@@ -18,6 +18,7 @@ try{
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isProd = process.env.NODE_ENV === 'production';
 
 app.set('trust proxy', 1);
 app.use(express.json());
@@ -49,7 +50,6 @@ const pool = new Pool({
   ssl: enablePgSsl ? { rejectUnauthorized: false } : false
 });
 
-const isProd = process.env.NODE_ENV === 'production';
 const showVerificationCode = (process.env.SHOW_VERIFICATION_CODE === '1') || !isProd;
 
 function sendSuccess(res, data = {}) {
