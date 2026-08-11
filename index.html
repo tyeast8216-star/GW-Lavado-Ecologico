@@ -155,7 +155,38 @@
                       Únete a la franquicia líder en lavado ecológico de vehículos, con más de 30 años de experiencia.
                     </p>
                     <div class="btn-box">
+<<<<<<< HEAD
                       <a href="" class="btn-1">
+=======
+                      <a href="" class="btn-1" data-i18n="leer_mas">
+                        Leer más
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="slider_img-box">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            <div class="container">
+              <div class="row">
+                <div class="col-lg-5 col-md-6">
+                  <div class="slider_detail-box">
+                    <h1>
+                      <span data-i18n="slider_h1_line1">Inicia</span> <br />
+                      <span data-i18n="slider_h1_line2">Un Negocio</span> <br />
+                      <span data-i18n="slider_h1_line3">Con Nosotros</span>
+                    </h1>
+                    <p data-i18n="slider_p">
+                      Únete a la franquicia líder en lavado ecológico de vehículos, con más de 30 años de experiencia.
+                    </p>
+                    <div class="btn-box">
+                      <a href="" class="btn-1" data-i18n="leer_mas">
+>>>>>>> db60f3f4af73acec62edb26ae48248e29a92c80e
                         Leer más
                       </a>
                     </div>
@@ -965,34 +996,6 @@
         try { $('#loginModal').modal('hide'); $('.modal-backdrop').remove(); $('body').removeClass('modal-open'); } catch (e) { }
         const resetModal = document.getElementById('password-reset-modal');
         if (resetModal) resetModal.style.display = 'flex';
-      });
-      const loginForm = document.getElementById('loginModalForm');
-      if (!loginForm) return;
-      loginForm.addEventListener('submit', async function (event) {
-        event.preventDefault();
-        const email = (document.getElementById('modal-login-email') || {}).value || '';
-        const password = (document.getElementById('modal-login-password') || {}).value || '';
-        if (!email || !password) {
-          showToast('Por favor ingresa correo y contraseña', 'danger');
-          return;
-        }
-        try {
-          const response = await fetch('/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-          });
-          const data = await response.json();
-          if (data && data.ok) {
-            $('#loginModal').modal('hide');
-            window.location.href = '/';
-          } else {
-            showToast(data && data.message ? data.message : 'Credenciales incorrectas', 'danger');
-          }
-        } catch (error) {
-          console.error(error);
-          showToast('Error de conexión con el servidor', 'danger');
-        }
       });
     });
   </script>

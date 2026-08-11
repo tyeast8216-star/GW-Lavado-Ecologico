@@ -4,7 +4,7 @@ const session = require('express-session');
 let multer;
 try{ multer = require('multer'); }catch(e){ multer = null; }
 const bcrypt = require('bcryptjs');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const nodemailer = require('nodemailer');
 // load environment variables from .env when present
 try{ require('dotenv').config(); }catch(e){}
@@ -18,158 +18,200 @@ try{
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isProd = process.env.NODE_ENV === 'production';
 
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
-  secret: 'change_this_secret',
+  secret: process.env.SESSION_SECRET || 'change_this_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false }
+  cookie: {
+    secure: isProd,
+    sameSite: 'lax',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000
+  }
 }));
 
 app.use(express.static(path.join(__dirname)));
 
-// SQLite DB
-const DB_PATH = path.join(__dirname, 'users.db');
-const db = new sqlite3.Database(DB_PATH, (err) => {
-  if (err) console.error('DB open error', err);
+// PostgreSQL pool and lightweight compatibility wrapper
+const pgConnectionString = process.env.DATABASE_URL || process.env.PG_CONNECTION;
+const enablePgSsl = process.env.PG_SSL === '1' || process.env.PG_SSL === 'true';
+if (!pgConnectionString) {
+  console.error('Error: DATABASE_URL or PG_CONNECTION environment variable is required.');
+  process.exit(1);
+}
+console.log('Postgres config: DATABASE_URL present=', !!pgConnectionString, 'PG_SSL=', enablePgSsl);
+const pool = new Pool({
+  connectionString: pgConnectionString,
+  ssl: enablePgSsl ? { rejectUnauthorized: false } : false
 });
 
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    email TEXT UNIQUE,
-    passwordHash TEXT,
-    isAdmin INTEGER DEFAULT 0
-  )`);
-  // ensure phone column exists on new installs
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    email TEXT UNIQUE,
-    passwordHash TEXT,
-    isAdmin INTEGER DEFAULT 0,
-    phone TEXT
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS purchases (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    created_at TEXT DEFAULT (datetime('now')),
-    description TEXT,
-    total REAL,
-    items TEXT,
-    FOREIGN KEY(user_id) REFERENCES users(id)
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    description TEXT,
-    price REAL DEFAULT 0,
-    image TEXT,
-    category TEXT,
-    stock INTEGER DEFAULT 0
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS contacts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    email TEXT,
-    phone TEXT,
-    service TEXT,
-    message TEXT,
-    created_at TEXT DEFAULT (datetime('now'))
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS email_verifications (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT,
-    code TEXT,
-    expires_at INTEGER
-  )`);
-  // create demo user if missing
-  const demoEmail = 'user@example.com';
-  db.get('SELECT id FROM users WHERE email = ?', [demoEmail], (err, row) => {
-    if (!row) {
+const showVerificationCode = (process.env.SHOW_VERIFICATION_CODE === '1') || !isProd;
+
+function sendSuccess(res, data = {}) {
+  res.status(200).json(Object.assign({ ok: true }, data));
+}
+
+function sendError(res, message, status = 400, detail) {
+  const body = { ok: false, message };
+  if (detail && !isProd) body.detail = String(detail);
+  return res.status(status).json(body);
+}
+
+function sendServerError(res, message = 'Error interno del servidor', detail) {
+  if (detail) console.error(message, detail);
+  return sendError(res, message, 500, detail);
+}
+
+function toPg(sql) {
+  let i = 0;
+  return sql.replace(/\?/g, () => { i += 1; return '$' + i; });
+}
+
+const db = {
+  get: (sql, params, cb) => {
+    pool.query(toPg(sql), params || [])
+      .then(r => cb(null, r.rows[0] || null))
+      .catch(e => cb(e));
+  },
+  all: (sql, params, cb) => {
+    pool.query(toPg(sql), params || [])
+      .then(r => cb(null, r.rows || []))
+      .catch(e => cb(e));
+  },
+  run: (sql, params, cb) => {
+    const isInsert = /^\s*insert\s+/i.test(sql);
+    const needsReturning = isInsert && !/returning\s+/i.test(sql);
+    const finalSql = needsReturning ? (toPg(sql) + ' RETURNING id') : toPg(sql);
+    pool.query(finalSql, params || [])
+      .then(r => {
+        const lastId = (r.rows && r.rows[0] && (r.rows[0].id || r.rows[0].lastval)) ? (r.rows[0].id || r.rows[0].lastval) : undefined;
+        const changes = r.rowCount || 0;
+        if (typeof cb === 'function') cb.call({ lastID: lastId, changes: changes });
+      })
+      .catch(e => { if (typeof cb === 'function') cb(e); });
+  }
+};
+
+// Initialize schema on startup
+(async function initDb(){
+  try{
+    await pool.query('SELECT 1');
+    console.log('Postgres connection verified.');
+    await pool.query(`CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      email TEXT UNIQUE,
+      passwordHash TEXT,
+      isAdmin INTEGER DEFAULT 0,
+      phone TEXT
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS purchases (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+      description TEXT,
+      total NUMERIC,
+      items TEXT,
+      delivered INTEGER DEFAULT 0,
+      delivered_at TIMESTAMP WITH TIME ZONE,
+      hidden INTEGER DEFAULT 0,
+      external_id TEXT
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS products (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      description TEXT,
+      price NUMERIC DEFAULT 0,
+      image TEXT,
+      category TEXT,
+      stock INTEGER DEFAULT 0
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS contacts (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      email TEXT,
+      phone TEXT,
+      service TEXT,
+      message TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS email_verifications (
+      id SERIAL PRIMARY KEY,
+      email TEXT,
+      code TEXT,
+      expires_at INTEGER
+    )`);
+
+    // unique index for external_id if present
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_purchases_external_id ON purchases(external_id)`);
+
+    // create demo user if missing
+    const demoEmail = 'user@example.com';
+    const r = await pool.query('SELECT id FROM users WHERE email = $1', [demoEmail]);
+    if (!r.rows.length) {
       const demoHash = bcrypt.hashSync('password123', 10);
-      db.run('INSERT INTO users (name,email,passwordHash,isAdmin) VALUES (?,?,?,?)', ['Demo User', demoEmail, demoHash, 1]);
+      await pool.query('INSERT INTO users (name,email,passwordHash,isAdmin) VALUES ($1,$2,$3,$4)', ['Demo User', demoEmail, demoHash, 1]);
     }
-  });
-});
+  }catch(e){
+    console.error('DB init error', e);
+    process.exit(1);
+  }
+})();
 
-// Ensure products table has new optional columns (for upgrades)
-db.serialize(() => {
-  db.all("PRAGMA table_info(products)", [], (err, cols) => {
-    if (err) { console.error('PRAGMA table_info error', err); return; }
-    const names = (cols || []).map(c => c.name);
-    const tasks = [];
-    if (!names.includes('category')) tasks.push(cb => db.run('ALTER TABLE products ADD COLUMN category TEXT', cb));
-    if (!names.includes('stock')) tasks.push(cb => db.run('ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 0', cb));
-    // run sequentially
-    function runNext(i){ if(i>=tasks.length) return; tasks[i]((e)=>{ if(e) console.warn('Could not add column', e); runNext(i+1); }); }
-    runNext(0);
-  });
-  // ensure users table has phone column (for upgrades)
-  db.all("PRAGMA table_info(users)", [], (err2, ucols) => {
-    if (err2) { console.error('PRAGMA users table_info error', err2); return; }
-    const unames = (ucols || []).map(c => c.name);
-    if (!unames.includes('phone')) {
-      db.run('ALTER TABLE users ADD COLUMN phone TEXT', (e) => { if (e) console.warn('Could not add users.phone', e); });
-    }
-  });
-  // ensure purchases table has delivered columns
-  db.all("PRAGMA table_info(purchases)", [], (err3, pcols) => {
-    if (err3) { console.error('PRAGMA purchases table_info error', err3); return; }
-    const pnames = (pcols || []).map(c => c.name);
-    if (!pnames.includes('delivered')) db.run("ALTER TABLE purchases ADD COLUMN delivered INTEGER DEFAULT 0", (e)=>{ if(e) console.warn('Could not add purchases.delivered', e); });
-    if (!pnames.includes('delivered_at')) db.run("ALTER TABLE purchases ADD COLUMN delivered_at TEXT", (e)=>{ if(e) console.warn('Could not add purchases.delivered_at', e); });
-    if (!pnames.includes('hidden')) db.run("ALTER TABLE purchases ADD COLUMN hidden INTEGER DEFAULT 0", (e)=>{ if(e) console.warn('Could not add purchases.hidden', e); });
-    if (!pnames.includes('external_id')) db.run("ALTER TABLE purchases ADD COLUMN external_id TEXT", (e)=>{ if(e) console.warn('Could not add purchases.external_id', e); });
-    // ensure an index for fast lookup and idempotency (create only if column exists)
-    db.all("PRAGMA table_info(purchases)", [], (err4, pcols2) => {
-      if (err4) { console.warn('Could not re-check purchases table info', err4); return; }
-      const pnames2 = (pcols2 || []).map(c => c.name);
-      if (pnames2.includes('external_id')) {
-        db.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_purchases_external_id ON purchases(external_id)", (e)=>{ if(e) console.warn('Could not create index on purchases.external_id', e); });
-      }
-    });
-  });
+pool.on('error', (err) => {
+  console.error('Postgres pool error', err);
 });
 
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.json({ ok: false, message: 'Faltan credenciales' });
-  db.get('SELECT id,name,email,passwordHash,isAdmin FROM users WHERE email = ?', [email], (err, row) => {
-    if (err) return res.json({ ok: false, message: 'Error de base de datos' });
-    if (!row) return res.json({ ok: false, message: 'Usuario no encontrado' });
-    const match = bcrypt.compareSync(password, row.passwordHash);
-    if (!match) return res.json({ ok: false, message: 'Contraseña incorrecta' });
-    req.session.user = { id: row.id, name: row.name, email: row.email, isAdmin: !!row.isAdmin };
-    res.json({ ok: true });
+  const emailTrim = String(email || '').trim().toLowerCase();
+  if (!emailTrim || !password) return sendError(res, 'Faltan credenciales', 400);
+  db.get('SELECT id,name,email,passwordHash AS "passwordHash",isadmin AS "isAdmin" FROM users WHERE email = ?', [emailTrim], (err, row) => {
+    if (err) return sendServerError(res, 'Error al verificar las credenciales', err);
+    if (!row) return sendError(res, 'Usuario o contraseña incorrectos', 401);
+    const storedHash = row.passwordHash || row.passwordhash || row.password_hash;
+    const isAdminValue = !!(row.isAdmin || row.isadmin || row.is_admin);
+    const match = bcrypt.compareSync(password, storedHash);
+    if (!match) return sendError(res, 'Usuario o contraseña incorrectos', 401);
+    req.session.user = { id: row.id, name: row.name, email: row.email, isAdmin: isAdminValue };
+    req.session.save((saveErr) => {
+      if (saveErr) return sendServerError(res, 'Error al guardar la sesión', saveErr);
+      console.log('Login success:', { email: row.email, sessionID: req.sessionID, user: req.session.user });
+      sendSuccess(res);
+    });
   });
 });
 
-app.post('/register', (req, res) => {
+app.post(['/register', '/register.html'], (req, res) => {
   const { name, email, password, phone } = req.body;
   const verificationCode = req.body.verificationCode;
-  if (!email || !password) return res.json({ ok: false, message: 'Faltan datos' });
+  const emailTrim = String(email || '').trim().toLowerCase();
+  if (!emailTrim || !password) return sendError(res, 'Faltan datos', 400);
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) return res.json({ ok: false, message: 'Email inválido' });
-  if (password.length < 8) return res.json({ ok: false, message: 'La contraseña debe tener al menos 8 caracteres' });
-  db.get('SELECT id FROM users WHERE email = ?', [email], (err, row) => {
-    if (err) return res.json({ ok: false, message: 'Error de base de datos' });
-    if (row) return res.json({ ok: false, message: 'El usuario ya existe' });
-    // require verification code
-    if (!verificationCode) return res.json({ ok: false, message: 'Se requiere verificar el correo. Envía el código recibido.' });
-    db.get('SELECT code,expires_at FROM email_verifications WHERE email = ? ORDER BY id DESC LIMIT 1', [email], (e2, vr) => {
-      if (e2) return res.json({ ok: false, message: 'Error de base de datos' });
+  if (!emailRegex.test(emailTrim)) return sendError(res, 'Email inválido', 400);
+  if (password.length < 8) return sendError(res, 'La contraseña debe tener al menos 8 caracteres', 400);
+  db.get('SELECT id FROM users WHERE email = ?', [emailTrim], (err, row) => {
+    if (err) return sendServerError(res, 'Error al comprobar el email', err);
+    if (row) return sendError(res, 'El correo ya está registrado', 409);
+    if (!verificationCode) return sendError(res, 'Se requiere verificar el correo antes de registrarse', 400);
+    db.get('SELECT code,expires_at FROM email_verifications WHERE email = ? ORDER BY id DESC LIMIT 1', [emailTrim], (e2, vr) => {
+      if (e2) return sendServerError(res, 'Error al comprobar el código de verificación', e2);
       const now = Math.floor(Date.now()/1000);
-      if (!vr || vr.code !== String(verificationCode) || !vr.expires_at || vr.expires_at < now) return res.json({ ok: false, message: 'Código de verificación inválido o caducado' });
-      // proceed to create user
+      if (!vr || vr.code !== String(verificationCode) || !vr.expires_at || vr.expires_at < now) return sendError(res, 'Código de verificación inválido o caducado', 400);
       const passwordHash = bcrypt.hashSync(password, 10);
-      db.run('INSERT INTO users (name,email,passwordHash,isAdmin,phone) VALUES (?,?,?,?,?)', [name, email, passwordHash, 0, phone || null], function(err) {
-        if (err) return res.json({ ok: false, message: 'Error al crear usuario' });
-        req.session.user = { id: this.lastID, name: name || '', email, isAdmin: false };
-        res.json({ ok: true });
+      db.run('INSERT INTO users (name,email,passwordHash,isAdmin,phone) VALUES (?,?,?,?,?)', [name, emailTrim, passwordHash, 0, phone || null], function(err) {
+        if (err) return sendServerError(res, 'Error al registrar el usuario', err);
+        req.session.user = { id: this.lastID, name: name || '', email: emailTrim, isAdmin: false };
+        sendSuccess(res);
       });
     });
   });
@@ -182,52 +224,61 @@ app.post('/api/send-verification', (req, res) => {
   const emailTrim = String(email).trim();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(emailTrim)) return res.json({ ok: false, message: 'Email inválido' });
-  const code = String(Math.floor(100000 + Math.random()*900000));
-  const expiresAt = Math.floor(Date.now()/1000) + (10*60); // 10 minutes
-  db.run('INSERT INTO email_verifications (email, code, expires_at) VALUES (?,?,?)', [emailTrim, code, expiresAt], function(err){
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const expiresAt = Math.floor(Date.now() / 1000) + (10 * 60); // 10 minutes
+  db.run('INSERT INTO email_verifications (email, code, expires_at) VALUES (?,?,?)', [emailTrim, code, expiresAt], function (err) {
     if (err) {
       console.error('DB insert verification error', err);
-      return res.status(500).json({ ok: false, message: 'Error al generar el código' });
+      return sendServerError(res, 'Error al generar el código de verificación', err);
     }
-    // send email via nodemailer if configured
     const smtpHost = process.env.SMTP_HOST;
-    if (smtpHost) {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: Number(process.env.SMTP_PORT||587),
-        secure: process.env.SMTP_SECURE === '1' || process.env.SMTP_SECURE === 'true',
-        auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
-        tls: { rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED !== 'false' }
-      });
-      const from = process.env.FROM_EMAIL || ('no-reply@' + (req.hostname || 'localhost'));
-      const mailOptions = { from, to: emailTrim, subject: 'GW Lavado Ecologico -Código de verificación', text: `Bienvenido a GW Lavado Ecologico! Tu código de verificación es: ${code} (válido 10 minutos)` };
-      // verify transporter connection first for clearer errors
-      transporter.verify((verErr, success) => {
-        if (verErr) {
-          console.error('SMTP verify error:', verErr && verErr.message ? verErr.message : verErr);
-          const respErr = { ok: false, sent: false, message: 'No se pudo conectar al servidor SMTP' };
-          if (process.env.NODE_ENV !== 'production') respErr.detail = verErr && verErr.message ? String(verErr.message) : String(verErr);
-          return res.status(500).json(respErr);
-        }
-        transporter.sendMail(mailOptions, (mailErr, info) => {
-          if (mailErr) {
-            console.error('Mail send error', mailErr && mailErr.message ? mailErr.message : mailErr);
-            const resp = { ok: false, sent: false, message: 'Error al enviar el correo' };
-            if (process.env.NODE_ENV !== 'production') resp.detail = mailErr && mailErr.message ? String(mailErr.message) : String(mailErr);
-            return res.status(500).json(resp);
-          }
-          console.log('Verification email sent to', emailTrim, 'info:', info && info.response ? info.response : info);
-          return res.json({ ok: true, sent: true });
-        });
-      });
-    } else {
-      // no SMTP configured — in development, log code to console and optionally return it in the response
-      console.log(`Verification code for ${emailTrim}: ${code}`);
-      const showCode = (process.env.SHOW_VERIFICATION_CODE === '1') || (process.env.NODE_ENV !== 'production');
-      const resp = { ok: true, sent: false, dev: true };
-      if (showCode) resp.code = code;
-      res.json(resp);
+    if (!smtpHost) {
+      console.log(`Verification code for ${emailTrim}: ${code} (SMTP not configured)`);
+      return res.json({ ok: true, sent: false, dev: true, code, message: 'SMTP no configurado. Usa este código para verificar tu correo.' });
     }
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === '1' || process.env.SMTP_SECURE === 'true',
+      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
+      tls: { rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED !== 'false' }
+    });
+    const from = process.env.FROM_EMAIL || ('no-reply@' + (req.hostname || 'localhost'));
+    const mailOptions = {
+      from,
+      to: emailTrim,
+      subject: 'GW Lavado Ecologico - Código de verificación',
+      text: `Bienvenido a GW Lavado Ecologico! Tu código de verificación es: ${code} (válido 10 minutos)`
+    };
+    transporter.verify((verErr) => {
+      if (verErr) {
+        console.error('SMTP verify error:', verErr && verErr.message ? verErr.message : verErr);
+        const responseBody = {
+          ok: true,
+          sent: false,
+          message: 'No se pudo conectar al servidor de correo. Usa este código para verificar tu correo.',
+          code
+        };
+        if (!isProd) responseBody.detail = verErr && verErr.message ? String(verErr.message) : String(verErr);
+        return res.json(responseBody);
+      }
+      transporter.sendMail(mailOptions, (mailErr, info) => {
+        if (mailErr) {
+          console.error('Mail send error', mailErr && mailErr.message ? mailErr.message : mailErr);
+          const responseBody = {
+            ok: true,
+            sent: false,
+            message: 'No se pudo enviar el correo. Usa este código para verificar tu correo.',
+            code
+          };
+          if (!isProd) responseBody.detail = mailErr && mailErr.message ? String(mailErr.message) : String(mailErr);
+          return res.json(responseBody);
+        }
+        console.log('Verification email sent to', emailTrim, 'info:', info && info.response ? info.response : info);
+        const responseBody = { ok: true, sent: true, code: showVerificationCode ? code : undefined };
+        return res.json(responseBody);
+      });
+    });
   });
 });
 
@@ -240,17 +291,16 @@ app.post('/api/request-password-reset', (req, res) => {
   if (!emailRegex.test(emailTrim)) return res.json({ ok: false, message: 'Email inválido' });
   // check if user exists; only send when a user with that email exists
   db.get('SELECT id FROM users WHERE email = ? LIMIT 1', [emailTrim], (err, row) => {
-    if (err) { console.error('DB error checking user for reset', err); return res.status(500).json({ ok: false, message: 'Error de base de datos' }); }
+    if (err) { console.error('DB error checking user for reset', err); return sendServerError(res, 'Error al comprobar el correo', err); }
     if (!row) {
-      // do not send email if no user found
-      console.log('Password reset requested for non-existent user (no email sent):', emailTrim);
-      return res.json({ ok: true, sent: false });
+      console.log('Password reset solicitado para email inexistente:', emailTrim);
+      return sendSuccess(res, { sent: false });
     }
     // user exists: generate code, store and send
     const code = String(Math.floor(100000 + Math.random()*900000));
     const expiresAt = Math.floor(Date.now()/1000) + (10*60);
     db.run('INSERT INTO email_verifications (email, code, expires_at) VALUES (?,?,?)', [emailTrim, code, expiresAt], function(err2){
-      if (err2) { console.error('DB insert verification error', err2); return res.status(500).json({ ok: false, message: 'Error al generar el código' }); }
+      if (err2) { console.error('DB insert verification error', err2); return sendServerError(res, 'Error al generar el código', err2); }
       // send email similar to send-verification
       const smtpHost = process.env.SMTP_HOST;
       if (smtpHost) {
@@ -289,14 +339,14 @@ app.post('/api/request-password-reset', (req, res) => {
 // Reset password using code sent to email
 app.post('/api/reset-password', (req, res) => {
   const { email, code, password, confirmPassword } = req.body || {};
-  if (!email || !code || !password) return res.json({ ok: false, message: 'Faltan datos' });
-  if (confirmPassword !== undefined && String(confirmPassword) !== String(password)) return res.json({ ok: false, message: 'Las contraseñas no coinciden' });
-  if (String(password).length < 8) return res.json({ ok: false, message: 'La contraseña debe tener al menos 8 caracteres' });
+  if (!email || !code || !password) return sendError(res, 'Faltan datos', 400);
+  if (confirmPassword !== undefined && String(confirmPassword) !== String(password)) return sendError(res, 'Las contraseñas no coinciden', 400);
+  if (String(password).length < 8) return sendError(res, 'La contraseña debe tener al menos 8 caracteres', 400);
   // complexity: at least one lowercase, one uppercase, one digit and one symbol
   try{
     const pwd = String(password);
     const complexity = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}/;
-    if(!complexity.test(pwd)) return res.json({ ok: false, message: 'La contraseña debe incluir mayúscula, minúscula, número y símbolo' });
+    if(!complexity.test(pwd)) return sendError(res, 'La contraseña debe incluir mayúscula, minúscula, número y símbolo', 400);
   }catch(e){ /* ignore regex errors */ }
   const emailTrim = String(email).trim();
   db.get('SELECT code,expires_at FROM email_verifications WHERE email = ? ORDER BY id DESC LIMIT 1', [emailTrim], (err, row) => {
@@ -314,12 +364,12 @@ app.post('/api/reset-password', (req, res) => {
 // Verify code endpoint (optional, server also checks code during /register)
 app.post('/api/verify-code', (req, res) => {
   const { email, code } = req.body || {};
-  if (!email || !code) return res.json({ ok: false, message: 'Faltan datos' });
+  if (!email || !code) return sendError(res, 'Faltan datos', 400);
   const emailTrim = String(email).trim();
   db.get('SELECT code,expires_at FROM email_verifications WHERE email = ? ORDER BY id DESC LIMIT 1', [emailTrim], (err, row) => {
     if (err) return res.status(500).json({ ok: false, message: 'Error de base de datos' });
     const now = Math.floor(Date.now()/1000);
-    if (!row || row.code !== String(code) || !row.expires_at || row.expires_at < now) return res.json({ ok: false, valid: false, message: 'Código inválido o caducado' });
+    if (!row || row.code !== String(code) || !row.expires_at || row.expires_at < now) return sendError(res, 'Código inválido o caducado', 400);
     res.json({ ok: true, valid: true });
   });
 });
@@ -328,9 +378,13 @@ app.post('/api/verify-code', (req, res) => {
 app.get('/api/users', (req, res) => {
   if (!req.session || !req.session.user) return res.status(401).json({ ok: false, message: 'No autorizado' });
   if (!req.session.user.isAdmin) return res.status(403).json({ ok: false, message: 'Requiere permisos de administrador' });
-  db.all('SELECT id, name, email, isAdmin, phone FROM users ORDER BY id', [], (err, rows) => {
+  db.all('SELECT id, name, email, isadmin AS "isAdmin", phone FROM users ORDER BY id', [], (err, rows) => {
     if (err) return res.status(500).json({ ok: false, message: 'Error de base de datos' });
-    res.json({ ok: true, users: rows });
+    const normalizedRows = (rows || []).map(row => ({
+      ...row,
+      isAdmin: !!(row.isAdmin || row.isadmin || row.is_admin)
+    }));
+    res.json({ ok: true, users: normalizedRows });
   });
 });
 
@@ -427,12 +481,15 @@ if(multer){
 
 // Return current session user info
 app.get('/api/me', (req, res) => {
+  console.log('/api/me session user=', req.session && req.session.user ? req.session.user : null, 'cookies=', req.headers.cookie);
   if (!req.session || !req.session.user) return res.json({ ok: false, user: null });
   const id = parseInt(req.session.user.id, 10);
-  db.get('SELECT id, name, email, isAdmin, phone FROM users WHERE id = ?', [id], (err, row) => {
+  db.get('SELECT id, name, email, isadmin AS "isAdmin", phone FROM users WHERE id = ?', [id], (err, row) => {
     if (err) return res.status(500).json({ ok: false, message: 'Error de base de datos' });
     if (!row) return res.json({ ok: false, user: null });
-    row.isAdmin = !!row.isAdmin;
+    const isAdminValue = !!(row.isAdmin || row.isadmin || row.is_admin);
+    row.isAdmin = isAdminValue;
+    row.isadmin = isAdminValue;
     res.json({ ok: true, user: row });
   });
 });
@@ -935,7 +992,7 @@ app.post('/api/contact', async (req, res) => {
 app.get('/api/stats', (req, res) => {
   if (!req.session || !req.session.user) return res.status(401).json({ ok: false, message: 'No autorizado' });
   if (!req.session.user.isAdmin) return res.status(403).json({ ok: false, message: 'Requiere permisos de administrador' });
-  db.get('SELECT IFNULL(SUM(total),0) AS totalSales, COUNT(*) AS purchasesCount FROM purchases WHERE (hidden IS NULL OR hidden = 0)', [], (err, row) => {
+  db.get('SELECT COALESCE(SUM(total),0) AS totalSales, COUNT(*) AS purchasesCount FROM purchases WHERE (hidden IS NULL OR hidden = 0)', [], (err, row) => {
     if (err) return res.status(500).json({ ok: false, message: 'Error de base de datos' });
     res.json({ ok: true, totalSales: row.totalSales || 0, purchasesCount: row.purchasesCount || 0 });
   });
@@ -945,7 +1002,7 @@ app.get('/api/stats', (req, res) => {
 app.get('/api/stats/delivered', (req, res) => {
   if (!req.session || !req.session.user) return res.status(401).json({ ok: false, message: 'No autorizado' });
   if (!req.session.user.isAdmin) return res.status(403).json({ ok: false, message: 'Requiere permisos de administrador' });
-  db.get('SELECT IFNULL(SUM(total),0) AS deliveredSales, COUNT(*) AS deliveredCount FROM purchases WHERE delivered = 1 AND (hidden IS NULL OR hidden = 0)', [], (err, row) => {
+  db.get('SELECT COALESCE(SUM(total),0) AS deliveredSales, COUNT(*) AS deliveredCount FROM purchases WHERE delivered = 1 AND (hidden IS NULL OR hidden = 0)', [], (err, row) => {
     if (err) return res.status(500).json({ ok: false, message: 'Error de base de datos' });
     res.json({ ok: true, deliveredSales: row.deliveredSales || 0, deliveredCount: row.deliveredCount || 0 });
   });
@@ -1003,6 +1060,22 @@ app.use('/api', (req, res, next) => {
   res.status(404).json({ ok: false, message: 'API endpoint not found' });
 });
 
+async function initDb() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log("¡Tablas creadas o verificadas exitosamente!");
+  } catch (err) {
+    console.error("Error al crear las tablas:", err);
+  }
+}
+initDb();
 function startServer(port){
   const server = app.listen(port)
     .on('listening', () => console.log(`Server listening on http://localhost:${port}`))

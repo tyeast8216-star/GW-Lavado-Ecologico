@@ -62,7 +62,10 @@ async function initDashboard(){
   // load users and stats
   const data = await fetchJson('/api/users');
   if(!data || !data.ok){ usersMsg.textContent = data && data.message ? data.message : 'No autorizado'; return; }
-  const users = data.users || [];
+  const users = (data.users || []).map(u => ({
+    ...u,
+    isAdmin: !!(u.isAdmin || u.isadmin || u.is_admin)
+  }));
   document.getElementById('stat-users').textContent = users.length;
   document.getElementById('stat-admins').textContent = users.filter(u=>u.isAdmin).length;
   // preload countries for phone formatting

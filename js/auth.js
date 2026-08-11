@@ -8,18 +8,20 @@ async function loadAuthLink() {
     };
 
     const explicitBase = (window.API_BASE || '').replace(/\/$/, '');
-    const candidatePorts = [];
-    if (explicitBase) {
-      candidatePorts.push(explicitBase);
-    }
+    const baseOrigin = (window.location.origin || '').replace(/\/$/, '');
+    const candidateBases = [];
+    if (baseOrigin) candidateBases.push(baseOrigin);
+    if (explicitBase && candidateBases.indexOf(explicitBase) === -1) candidateBases.push(explicitBase);
     // try a range of localhost ports (useful if server auto-incremented)
-    for (let p = 3000; p <= 3010; p++) candidatePorts.push('http://localhost:' + p);
+    for (let p = 3000; p <= 3010; p++) candidateBases.push('http://localhost:' + p);
 
     let data;
     let usedBase = null;
-    for (const base of candidatePorts) {
+    const basesToTry = [''].concat(candidateBases);
+    for (const base of basesToTry) {
       try {
-        const res = await fetch(base + '/api/me', { credentials: 'include', cache: 'no-store' });
+        const url = base ? (base + '/api/me') : '/api/me';
+        const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
         const parsed = await userApiFromResponse(res);
         if (parsed && !parsed.__nonJson) { data = parsed; usedBase = base; break; }
         // if non-JSON and contains Express 404 text, continue to next
@@ -33,15 +35,29 @@ async function loadAuthLink() {
       console.log('auth check: no user in session', data);
       return;
     }
-    const isAdmin = !!data.user.isAdmin;
+    data.user.isAdmin = !!(data.user.isAdmin || data.user.isadmin || data.user.is_admin);
+    const isAdmin = data.user.isAdmin;
     console.log('auth check /api/me ->', data, 'usedBase=', usedBase, 'document.cookie=', document.cookie.slice(0, 200));
+    if (isAdmin) console.log('auth check: admin user detected', data.user);
     const insertAdminLink = () => {
+<<<<<<< HEAD
       if (document.getElementById('admin-nav-link')) return false;
       const navs = document.querySelectorAll('.navbar-nav');
       if (!navs || navs.length === 0) return false;
+=======
+      // do not insert if admin anchor or admin li already exists
+      if (document.getElementById('admin-nav-link') || document.getElementById('admin-nav-anchor')) return false;
+      const containerSelectors = ['.topbar-actions', '.topbar-nav', '.navbar-nav', '.collapse.navbar-collapse', '.custom_nav-container', 'header'];
+      const navContainers = [];
+      containerSelectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => { if (el && !navContainers.includes(el)) navContainers.push(el); });
+      });
+      if (!navContainers || navContainers.length === 0) return false;
+>>>>>>> db60f3f4af73acec62edb26ae48248e29a92c80e
       let inserted = false;
-      navs.forEach(nav => {
+      navContainers.forEach(container => {
         try {
+<<<<<<< HEAD
           if (nav && !nav.querySelector('#admin-nav-link')) {
             const li = document.createElement('li');
             li.id = 'admin-nav-link';
@@ -55,7 +71,26 @@ async function loadAuthLink() {
             }
             inserted = true;
             console.log('auth: admin link injected into navbar');
+=======
+          if (!container || container.querySelector('#admin-nav-link')) return;
+          const li = document.createElement('li');
+          li.id = 'admin-nav-link';
+          li.className = 'nav-item icon-nav-item';
+          li.innerHTML = '<a class="nav-link no-dot" href="/dashboard.html" title="Panel administración" style="color:#000 !important; display: inline-flex; align-items: center; gap: 6px; padding: 6px 4px !important; margin: 0 !important;">'
+  + '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="20" height="20" style="fill: #000 !important; stroke: #000 !important; color: #000 !important;" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+  + '<path d="M320 64C324.6 64 329.2 65 333.4 66.9L521.8 146.8C543.8 156.1 560.2 177.8 560.1 204C559.6 303.2 518.8 484.7 346.5 567.2C329.8 575.2 310.4 575.2 293.7 567.2C121.3 484.7 80.6 303.2 80.1 204C80 177.8 96.4 156.1 118.4 146.8L306.7 66.9C310.9 65 315.4 64 320 64zM320 130.8L320 508.9C458 442.1 495.1 294.1 496 205.5L320 130.9L320 130.9z"/>'
+  + '</svg>'
+  + '<span style="font-size:0.9rem; color:#000;">Admin</span>'
+  + '</a>';
+          const accountLink = container.querySelector('#account-nav-link');
+          if (accountLink && accountLink.parentElement) {
+            accountLink.parentElement.insertBefore(li, accountLink);
+          } else {
+            container.appendChild(li);
+>>>>>>> db60f3f4af73acec62edb26ae48248e29a92c80e
           }
+          inserted = true;
+          console.log('auth: admin link injected into navbar');
         } catch (err) { console.warn('auth: error injecting admin link', err); }
       });
       return inserted;
@@ -63,6 +98,7 @@ async function loadAuthLink() {
     // add dashboard/account link for any logged-in user
     const insertAccountLink = () => {
       if (document.getElementById('account-nav-link')) return true;
+<<<<<<< HEAD
       const navs = document.querySelectorAll('.navbar-nav');
       if (!navs || navs.length === 0) return false;
       navs.forEach(nav => {
@@ -82,6 +118,39 @@ async function loadAuthLink() {
         } catch (err) { console.warn('auth: error injecting account link', err); }
       });
       return true;
+=======
+      try {
+        const navContainers = document.querySelectorAll('.navbar-nav, .collapse.navbar-collapse, .custom_nav-container');
+        if (!navContainers || navContainers.length === 0) return false;
+        navContainers.forEach(container => {
+          if (document.getElementById('account-nav-link')) return;
+          const li = document.createElement('li');
+          li.id = 'account-nav-link';
+          li.className = 'nav-item icon-nav-item';
+          // if user is admin, inject the admin icon inline before the account icon
+          const adminHtml = isAdmin ?
+            ('<a id="admin-nav-anchor" class="nav-link no-dot admin-inline" href="/dashboard.html" title="Panel administración" style="color:#000 !important;display:inline-flex;align-items:center;padding:6px 4px !important;margin:0 !important">'
+            + '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="20" height="20" style="fill: #000 !important; stroke: #000 !important; color: #000 !important;" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+            + '<path d="M320 64C324.6 64 329.2 65 333.4 66.9L521.8 146.8C543.8 156.1 560.2 177.8 560.1 204C559.6 303.2 518.8 484.7 346.5 567.2C329.8 575.2 310.4 575.2 293.7 567.2C121.3 484.7 80.6 303.2 80.1 204C80 177.8 96.4 156.1 118.4 146.8L306.7 66.9C310.9 65 315.4 64 320 64zM320 130.8L320 508.9C458 442.1 495.1 294.1 496 205.5L320 130.9L320 130.9z"/>'
+            + '</svg>'
+            + '</a>') : '';
+
+          li.innerHTML = adminHtml + `
+            <a class="nav-link" href="/user-dashboard.html" title="Mi cuenta" style="display:flex;align-items:center;color:#fff;padding:6px 4px !important;margin:0 !important">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z"></path>
+                <path d="M2 22c0-3.314 4.686-6 10-6s10 2.686 10 6"></path>
+              </svg>
+            </a>`;
+          const cartEl = container.querySelector('.nav-cart');
+          const ul = container.querySelector('.navbar-nav');
+          if (cartEl && cartEl.parentElement) cartEl.parentElement.insertBefore(li, cartEl.nextSibling);
+          else if (ul && ul.parentElement) ul.parentElement.appendChild(li);
+          else container.appendChild(li);
+        });
+        return true;
+      } catch (err) { console.warn('auth: error injecting account link', err); return false; }
+>>>>>>> db60f3f4af73acec62edb26ae48248e29a92c80e
     };
     // try immediate insert, otherwise retry a few times
     if (!insertAccountLink()) {
@@ -414,30 +483,91 @@ function attachResetPasswordFlow() {
 }
 
 function attachLoginFormHandler() {
-  const form = document.getElementById('loginModalForm');
-  if (!form || form.dataset.loginBound) return;
-  form.addEventListener('submit', async function (event) {
-    event.preventDefault();
-    const email = (document.getElementById('modal-login-email') || {}).value || '';
-    const password = (document.getElementById('modal-login-password') || {}).value || '';
-    if (!email || !password) {
-      try { showToast('Por favor ingresa correo y contraseña', 'danger'); } catch (e) { }
-      return;
-    }
-    try {
-      const resp = await postToApi('/login', { email, password });
-      if (resp && resp.ok) {
-        try { if (window.jQuery) { window.jQuery('#loginModal').modal('hide'); $('.modal-backdrop').remove(); document.body.classList.remove('modal-open'); } } catch (e) { }
-        window.location.href = '/';
+  const forms = Array.from(document.querySelectorAll('.login-form'));
+  forms.forEach(form => {
+    if (!form || form.dataset.loginBound) return;
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const email = (form.querySelector('input[name="email"]') || {}).value || '';
+      const password = (form.querySelector('input[name="password"]') || {}).value || '';
+      if (!email || !password) {
+        try { showToast('Por favor ingresa correo y contraseña', 'danger'); } catch (e) { }
         return;
       }
-      try { showToast(resp && resp.message ? resp.message : 'Credenciales incorrectas', 'danger'); } catch (e) { }
+      try {
+        const resp = await postToApi('/login', { email, password });
+        if (resp && resp.ok) {
+          try { if (window.jQuery) { window.jQuery('#loginModal').modal('hide'); $('.modal-backdrop').remove(); document.body.classList.remove('modal-open'); } } catch (e) { }
+          window.location.href = '/';
+          return;
+        }
+        try { showToast(resp && resp.message ? resp.message : 'Credenciales incorrectas', 'danger'); } catch (e) { }
+      } catch (err) {
+        console.error('login submit error', err);
+        try { showToast('Error de conexión con el servidor', 'danger'); } catch (e) { }
+      }
+    });
+    form.dataset.loginBound = '1';
+  });
+}
+
+function attachRegisterFormHandler() {
+  const form = document.querySelector('.register-form');
+  if (!form || form.dataset.registerBound) return;
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const name = (document.getElementById('name') || {}).value || '';
+    const email = (document.getElementById('email') || {}).value || '';
+    const phone = (document.getElementById('phone') || {}).value || '';
+    const password = (document.getElementById('password') || {}).value || '';
+    const password2 = (document.getElementById('password2') || {}).value || '';
+    const verificationCode = (document.getElementById('email-code') || {}).value || '';
+
+    if (!name || !email || !password || !password2) {
+      try { showToast('Por favor completa todos los campos', 'danger'); } catch (e) { }
+      return;
+    }
+    if (password !== password2) {
+      try { showToast('Las contraseñas no coinciden', 'danger'); } catch (e) { }
+      return;
+    }
+    if (!verificationCode) {
+      try {
+        const resp = await postToApi('/api/send-verification', { email });
+        if (resp && resp.ok) {
+          const area = document.getElementById('email-verification-area');
+          if (area) area.style.display = 'block';
+          const codeInput = document.getElementById('email-code');
+          if (resp.code && codeInput) {
+            codeInput.value = resp.code;
+          }
+          let msg = 'Código enviado al correo. Ingresa el código y vuelve a enviar.';
+          if (resp.code) msg = `Código de verificación: ${resp.code}. Ingresa el código y vuelve a enviar.`;
+          try { showToast(msg, 'success'); } catch (e) { }
+          return;
+        }
+        try { showToast(resp && resp.message ? resp.message : 'No se pudo enviar el código de verificación', 'danger'); } catch (e) { }
+      } catch (err) {
+        console.error('send verification error', err);
+        try { showToast('Error de conexión con el servidor', 'danger'); } catch (e) { }
+      }
+      return;
+    }
+
+    try {
+      const resp = await postToApi('/register', { name, email, password, phone, verificationCode });
+      if (resp && resp.ok) {
+        try { showToast('Cuenta creada correctamente', 'success'); } catch (e) { }
+        setTimeout(() => window.location.href = '/', 1200);
+        return;
+      }
+      try { showToast(resp && resp.message ? resp.message : 'No se pudo crear la cuenta', 'danger'); } catch (e) { }
     } catch (err) {
-      console.error('login submit error', err);
+      console.error('register submit error', err);
       try { showToast('Error de conexión con el servidor', 'danger'); } catch (e) { }
     }
   });
-  form.dataset.loginBound = '1';
+  form.dataset.registerBound = '1';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -446,8 +576,8 @@ document.addEventListener('DOMContentLoaded', () => {
   attachLoginLinkInterception();
   bindForgotPasswordHandlers();
   attachResetPasswordFlow();
-  // ensure the injected login modal form has a submit handler
   attachLoginFormHandler();
+  attachRegisterFormHandler();
 });
 
 window.openLoginModal = openLoginModal;

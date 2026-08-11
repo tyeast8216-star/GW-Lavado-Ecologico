@@ -908,6 +908,7 @@ a:focus {
   .custom_nav-container .navbar-brand img { margin-left: 0 !important; }
   .header_section .row { justify-content: center; }
   .header_section .col-lg-8 { width: 100% !important; max-width: 100% !important; margin-left: auto; margin-right: auto; }
+  .custom_nav-container .navbar-collapse .d-flex .lang-selector { margin-left: 0 !important; }
   .custom_nav-container .navbar-collapse .d-flex > * { margin: 0; }
 }
 @media (max-width: 991.98px) {
@@ -2154,144 +2155,113 @@ body.scrolled {
   padding-top: 70px;
 }
 
-
-/* ===================================================
-   SECCIÓN DE FRANQUICIA MASTER
-   =================================================== */
-
-/* 1. El contenedor del Banner Principal */
-.franquicia-master {
-  position: relative;
-  min-height: 500px;
-  margin-top: -90px;
-  /* Altura ideal para que el mapa luzca bien */
-  width: 100%;
-
-  /* Carga aquí la imagen del mapa limpio que guardaste */
-  background-image: url('../images/franquiciamaster.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-
-  /* Flexbox para empujar el contenido hacia la derecha */
-  display: flex;
-  justify-content: flex-end;
-  /* Alinea el contenido a la derecha */
-  align-items: center;
-  /* Centra el contenido verticalmente */
-  overflow: hidden;
+/* Language selector styling */
+.lang-selector {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(12,18,30,0.04);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 56px;
+  text-align: center;
+  box-shadow: none;
+  backdrop-filter: blur(6px);
+  color: #0c121e;
+  transition: background-color .18s ease, transform .12s ease, opacity .18s ease;
+  opacity: 0.9;
 }
 
-/* 2. El OVERLAY (Capa oscura sobre la imagen) */
-.franquicia-master::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  /* Gradiente: más claro a la izquierda (deja ver el mapa) y más oscuro a la derecha (para leer el texto) */
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.2) 20%, rgba(10, 35, 15, 0.85) 80%);
-  z-index: 1;
+.lang-selector:hover, .lang-selector:focus {
+  background: rgba(255,255,255,0.82);
+  opacity: 1;
+  transform: translateY(-1px);
+  outline: none;
 }
 
-/* 3. El Bloque de Contenido (Texto y Botón) */
-.franquicia-master-content {
-  position: relative;
-  z-index: 2;
-  /* Se posiciona por encima del overlay */
-  width: 100%;
-  max-width: 550px;
-  /* Evita que las líneas de texto sean demasiado anchas */
-  padding: 40px;
-  margin-right: 3%;
-  /* Margen de separación respecto al borde derecho de la pantalla */
-  color: #ffffff;
-  text-align: right;
-  /* Alineación del texto a la derecha como la referencia */
+/* compact language selector: override wide inline padding and limit width */
+.lang-selector { padding-left: 8px !important; padding-right:8px !important; width: auto !important; max-width:120px !important; }
+
+@media (min-width: 992px) {
+  /* push to the far right inside the navbar container */
+  .custom_nav-container .navbar-collapse .d-flex .lang-selector { margin-left: auto; margin-right: 16px; }
 }
 
-/* 4. Estilos de los textos internos */
-.franquicia-master-content h2 {
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-  margin-bottom: 20px;
-  color: #ffffff;
-  text-transform: uppercase;
+/* drawer/mobile: make selector full width inside side-drawer */
+#drawer-nav .lang-selector, #drawer-langSelector { width: 100%; margin: 12px 0; }
+
+/* wrapper for drawer selector */
+.drawer-lang-wrap { padding: 6px 0; }
+
+/* style button */
+.lang-style-btn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  margin-left: 18px;
+  cursor: pointer;
+  opacity: 0.85;
 }
 
-.franquicia-master-content p {
-  font-size: 1.1rem;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.9);
-  /* Blanco suavizado para una lectura elegante */
-  margin-bottom: 30px;
+@media (min-width: 992px) {
+.lang-compact-btn {
+  margin-left: 32rem;
+}
+}
+.lang-style-btn:hover { opacity: 1; }
+
+/* dark variant */
+.lang-variant-dark {
+  background: rgba(22,28,36,0.82) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,0.06) !important;
 }
 
-.franquicia-master img {
-  display: none;
-}
-
-.btn-franquicia {
-  display: block;
-  /* Cambia de inline-block a block para que acepte márgenes automáticos */
-  width: fit-content;
-  /* O un ancho fijo (ej. 250px) para que no ocupe todo el ancho */
-  margin: 30px auto 0 auto;
-  /* Arriba 20px, Derecha AUTO, Abajo 0, Izquierda AUTO */
-
-  /* ... el resto de tus estilos ... */
-  background-color: #1ece2d;
-  color: #ffffff;
-  text-decoration: none;
-  padding: 12px 30px;
-  font-size: 0.95rem;
-  font-weight: bold;
+/* compact variant: hide select, show compact button */
+.lang-compact-btn {
+  display: inline-block;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(12,18,30,0.04);
+  color: #111;
+  padding: 6px 8px;
   border-radius: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
+  cursor: pointer;
+  font-weight: 700;
+}
+.lang-compact-menu {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid rgba(12,18,30,0.06);
+  padding: 6px;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(12, 18, 30, 0.08);
+  z-index: 1200;
+}
+.lang-compact-menu.open { display: flex; }
+.lang-compact-item { background: transparent; border: none; padding: 6px 10px; cursor: pointer; font-weight:700; }
+.lang-compact-item:hover { background: rgba(0,0,0,0.04); }
+
+
+/* wrapper to place selector in top-right corner */
+.lang-selector-wrap {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 1100;
+}
+@media (min-width: 992px) {
+  .lang-selector-wrap { right: 16px; }
+}
+@media (max-width: 991.98px) {
+  /* move left a bit to avoid overlapping the navbar toggler */
+  .lang-selector-wrap { right: 64px; }
 }
 
-/* Efecto hover del botón */
-.btn-franquicia:hover {
-  background-color: #4f9326;
-  /* Un tono verde más oscuro */
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-}
-
-/* 6. Adaptabilidad para Móviles (Responsive) */
-@media (max-width: 768px) {
-  .franquicia-master {
-    justify-content: center;
-    /* En móviles el texto se centra */
-    min-height: 450px;
-  }
-
-  /* El overlay en móvil se vuelve oscuro completo para mantener legibilidad */
-  .franquicia-master::before {
-    background: rgba(10, 35, 15, 0.85);
-  }
-
-  .franquicia-master-content {
-    margin-right: 0;
-    text-align: center;
-    padding: 20px;
-  }
-
-  .franquicia-master-content h2 {
-    font-size: 2rem;
-  }
-
-  .franquicia-master img {
-    display: block;
-    width: 100%;
-    max-width: 500px;
-    margin-top: 20px;
-    margin-bottom: 20px;
-  }
-}
 /*# sourceMappingURL=style.css.map */

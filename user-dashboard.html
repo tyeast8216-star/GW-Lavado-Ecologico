@@ -14,6 +14,10 @@
     .brand{ display:flex; align-items:center; gap:12px }
     .layout{ max-width:1100px; margin:20px auto; display:grid; grid-template-columns: 1fr 340px; gap:20px }
     .main-card, .side-card{ background:var(--card); padding:16px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.04) }
+    .topbar-actions{ display:flex; flex-direction:column; align-items:flex-end; gap:8px }
+    .topbar-nav{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; margin-bottom:4px }
+    .topbar-nav .nav-link{ display:inline-flex; align-items:center; justify-content:flex-end; gap:6px; padding:8px 12px; border-radius:6px; text-decoration:none; color:#333; background:#f5f5f5 }
+    .topbar-nav .nav-link:hover{ background:#e9ecef }
     .profile-form label{ font-size:13px; color:var(--muted) }
     .purchases-list { list-style:none; padding:0; margin:0 }
     .purchase-item{ padding:10px; border-bottom:1px solid #f1f1f1 }
@@ -29,7 +33,8 @@
         <div style="font-size:12px;color:var(--muted)">Mi cuenta</div>
       </div>
     </div>
-    <div>
+    <div class="topbar-actions">
+      <nav class="navbar-nav topbar-nav" aria-label="Admin actions"></nav>
       <a href="/logout" class="btn btn-outline-secondary">Cerrar sesión</a>
     </div>
   </header>

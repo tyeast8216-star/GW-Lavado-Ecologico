@@ -55,6 +55,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     target.appendChild(a);
                 }
             });
+<<<<<<< HEAD
+=======
+            // (language selector removed) -- no cloning required
+>>>>>>> db60f3f4af73acec62edb26ae48248e29a92c80e
         }
         drawer.classList.add('open'); backdrop.classList.add('open'); document.body.style.overflow = 'hidden';
     }

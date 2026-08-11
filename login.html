@@ -177,31 +177,13 @@
 
   <script src="js/jquery-3.4.1.min.js"></script>
   <script src="js/bootstrap.js"></script>
+<<<<<<< HEAD
   <script src="js/auth.js"></script>
+=======
+  
+   <script src="js/auth.js"></script>
+>>>>>>> db60f3f4af73acec62edb26ae48248e29a92c80e
   <script src="js/toast.js"></script>
-  <script>
-    document.querySelector('.login-form').addEventListener('submit', async function(e){
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      try{
-        const res = await fetch('/login', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if(data.ok){
-          window.location.href = '/';
-        } else {
-          showToast(data.message || 'Credenciales incorrectas', 'danger');
-        }
-      } catch(err){
-        console.error(err);
-          showToast('Error de conexión con el servidor', 'danger');
-      }
-    });
-  </script>
 </body>
 </html>
 
