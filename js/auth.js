@@ -8,12 +8,16 @@ async function loadAuthLink() {
     };
 
     const explicitBase = (window.API_BASE || '').replace(/\/$/, '');
-    const candidatePorts = [];
+    const baseOrigin = (window.location.origin || '').replace(/\/$/, '');
+    const candidateBases = [];
     if (explicitBase) {
-      candidatePorts.push(explicitBase);
+      candidateBases.push(explicitBase);
+    }
+    if (baseOrigin && candidateBases.indexOf(baseOrigin) === -1) {
+      candidateBases.push(baseOrigin);
     }
     // try a range of localhost ports (useful if server auto-incremented)
-    for (let p = 3000; p <= 3010; p++) candidatePorts.push('http://localhost:' + p);
+    for (let p = 3000; p <= 3010; p++) candidateBases.push('http://localhost:' + p);
 
     let data;
     let usedBase = null;
