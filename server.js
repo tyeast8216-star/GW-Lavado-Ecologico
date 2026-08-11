@@ -4,7 +4,7 @@ const session = require('express-session');
 let multer;
 try{ multer = require('multer'); }catch(e){ multer = null; }
 const bcrypt = require('bcryptjs');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const nodemailer = require('nodemailer');
 // load environment variables from .env when present
 try{ require('dotenv').config(); }catch(e){}
@@ -30,110 +30,106 @@ app.use(session({
 
 app.use(express.static(path.join(__dirname)));
 
-// SQLite DB
-const DB_PATH = path.join(__dirname, 'users.db');
-const db = new sqlite3.Database(DB_PATH, (err) => {
-  if (err) console.error('DB open error', err);
+// PostgreSQL pool and lightweight compatibility wrapper
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || process.env.PG_CONNECTION || null,
+  ssl: process.env.PG_SSL === '1' || process.env.PG_SSL === 'true' ? { rejectUnauthorized: false } : false
 });
 
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    email TEXT UNIQUE,
-    passwordHash TEXT,
-    isAdmin INTEGER DEFAULT 0
-  )`);
-  // ensure phone column exists on new installs
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    email TEXT UNIQUE,
-    passwordHash TEXT,
-    isAdmin INTEGER DEFAULT 0,
-    phone TEXT
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS purchases (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    created_at TEXT DEFAULT (datetime('now')),
-    description TEXT,
-    total REAL,
-    items TEXT,
-    FOREIGN KEY(user_id) REFERENCES users(id)
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    description TEXT,
-    price REAL DEFAULT 0,
-    image TEXT,
-    category TEXT,
-    stock INTEGER DEFAULT 0
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS contacts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    email TEXT,
-    phone TEXT,
-    service TEXT,
-    message TEXT,
-    created_at TEXT DEFAULT (datetime('now'))
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS email_verifications (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT,
-    code TEXT,
-    expires_at INTEGER
-  )`);
-  // create demo user if missing
-  const demoEmail = 'user@example.com';
-  db.get('SELECT id FROM users WHERE email = ?', [demoEmail], (err, row) => {
-    if (!row) {
+function toPg(sql) {
+  let i = 0;
+  return sql.replace(/\?/g, () => { i += 1; return '$' + i; });
+}
+
+const db = {
+  get: (sql, params, cb) => {
+    pool.query(toPg(sql), params || [])
+      .then(r => cb(null, r.rows[0] || null))
+      .catch(e => cb(e));
+  },
+  all: (sql, params, cb) => {
+    pool.query(toPg(sql), params || [])
+      .then(r => cb(null, r.rows || []))
+      .catch(e => cb(e));
+  },
+  run: (sql, params, cb) => {
+    const isInsert = /^\s*insert\s+/i.test(sql);
+    const needsReturning = isInsert && !/returning\s+/i.test(sql);
+    const finalSql = needsReturning ? (toPg(sql) + ' RETURNING id') : toPg(sql);
+    pool.query(finalSql, params || [])
+      .then(r => {
+        const lastId = (r.rows && r.rows[0] && (r.rows[0].id || r.rows[0].lastval)) ? (r.rows[0].id || r.rows[0].lastval) : undefined;
+        const changes = r.rowCount || 0;
+        if (typeof cb === 'function') cb.call({ lastID: lastId, changes: changes });
+      })
+      .catch(e => { if (typeof cb === 'function') cb(e); });
+  }
+};
+
+// Initialize schema on startup
+(async function initDb(){
+  try{
+    await pool.query(`CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      email TEXT UNIQUE,
+      passwordHash TEXT,
+      isAdmin INTEGER DEFAULT 0,
+      phone TEXT
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS purchases (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+      description TEXT,
+      total NUMERIC,
+      items TEXT,
+      delivered INTEGER DEFAULT 0,
+      delivered_at TIMESTAMP WITH TIME ZONE,
+      hidden INTEGER DEFAULT 0,
+      external_id TEXT
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS products (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      description TEXT,
+      price NUMERIC DEFAULT 0,
+      image TEXT,
+      category TEXT,
+      stock INTEGER DEFAULT 0
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS contacts (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      email TEXT,
+      phone TEXT,
+      service TEXT,
+      message TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+    )`);
+
+    await pool.query(`CREATE TABLE IF NOT EXISTS email_verifications (
+      id SERIAL PRIMARY KEY,
+      email TEXT,
+      code TEXT,
+      expires_at INTEGER
+    )`);
+
+    // unique index for external_id if present
+    await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_purchases_external_id ON purchases(external_id)`);
+
+    // create demo user if missing
+    const demoEmail = 'user@example.com';
+    const r = await pool.query('SELECT id FROM users WHERE email = $1', [demoEmail]);
+    if (!r.rows.length) {
       const demoHash = bcrypt.hashSync('password123', 10);
-      db.run('INSERT INTO users (name,email,passwordHash,isAdmin) VALUES (?,?,?,?)', ['Demo User', demoEmail, demoHash, 1]);
+      await pool.query('INSERT INTO users (name,email,passwordHash,isAdmin) VALUES ($1,$2,$3,$4)', ['Demo User', demoEmail, demoHash, 1]);
     }
-  });
-});
-
-// Ensure products table has new optional columns (for upgrades)
-db.serialize(() => {
-  db.all("PRAGMA table_info(products)", [], (err, cols) => {
-    if (err) { console.error('PRAGMA table_info error', err); return; }
-    const names = (cols || []).map(c => c.name);
-    const tasks = [];
-    if (!names.includes('category')) tasks.push(cb => db.run('ALTER TABLE products ADD COLUMN category TEXT', cb));
-    if (!names.includes('stock')) tasks.push(cb => db.run('ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 0', cb));
-    // run sequentially
-    function runNext(i){ if(i>=tasks.length) return; tasks[i]((e)=>{ if(e) console.warn('Could not add column', e); runNext(i+1); }); }
-    runNext(0);
-  });
-  // ensure users table has phone column (for upgrades)
-  db.all("PRAGMA table_info(users)", [], (err2, ucols) => {
-    if (err2) { console.error('PRAGMA users table_info error', err2); return; }
-    const unames = (ucols || []).map(c => c.name);
-    if (!unames.includes('phone')) {
-      db.run('ALTER TABLE users ADD COLUMN phone TEXT', (e) => { if (e) console.warn('Could not add users.phone', e); });
-    }
-  });
-  // ensure purchases table has delivered columns
-  db.all("PRAGMA table_info(purchases)", [], (err3, pcols) => {
-    if (err3) { console.error('PRAGMA purchases table_info error', err3); return; }
-    const pnames = (pcols || []).map(c => c.name);
-    if (!pnames.includes('delivered')) db.run("ALTER TABLE purchases ADD COLUMN delivered INTEGER DEFAULT 0", (e)=>{ if(e) console.warn('Could not add purchases.delivered', e); });
-    if (!pnames.includes('delivered_at')) db.run("ALTER TABLE purchases ADD COLUMN delivered_at TEXT", (e)=>{ if(e) console.warn('Could not add purchases.delivered_at', e); });
-    if (!pnames.includes('hidden')) db.run("ALTER TABLE purchases ADD COLUMN hidden INTEGER DEFAULT 0", (e)=>{ if(e) console.warn('Could not add purchases.hidden', e); });
-    if (!pnames.includes('external_id')) db.run("ALTER TABLE purchases ADD COLUMN external_id TEXT", (e)=>{ if(e) console.warn('Could not add purchases.external_id', e); });
-    // ensure an index for fast lookup and idempotency (create only if column exists)
-    db.all("PRAGMA table_info(purchases)", [], (err4, pcols2) => {
-      if (err4) { console.warn('Could not re-check purchases table info', err4); return; }
-      const pnames2 = (pcols2 || []).map(c => c.name);
-      if (pnames2.includes('external_id')) {
-        db.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_purchases_external_id ON purchases(external_id)", (e)=>{ if(e) console.warn('Could not create index on purchases.external_id', e); });
-      }
-    });
-  });
-});
+  }catch(e){ console.error('DB init error', e); }
+})();
 
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
@@ -935,7 +931,7 @@ app.post('/api/contact', async (req, res) => {
 app.get('/api/stats', (req, res) => {
   if (!req.session || !req.session.user) return res.status(401).json({ ok: false, message: 'No autorizado' });
   if (!req.session.user.isAdmin) return res.status(403).json({ ok: false, message: 'Requiere permisos de administrador' });
-  db.get('SELECT IFNULL(SUM(total),0) AS totalSales, COUNT(*) AS purchasesCount FROM purchases WHERE (hidden IS NULL OR hidden = 0)', [], (err, row) => {
+  db.get('SELECT COALESCE(SUM(total),0) AS totalSales, COUNT(*) AS purchasesCount FROM purchases WHERE (hidden IS NULL OR hidden = 0)', [], (err, row) => {
     if (err) return res.status(500).json({ ok: false, message: 'Error de base de datos' });
     res.json({ ok: true, totalSales: row.totalSales || 0, purchasesCount: row.purchasesCount || 0 });
   });
@@ -945,7 +941,7 @@ app.get('/api/stats', (req, res) => {
 app.get('/api/stats/delivered', (req, res) => {
   if (!req.session || !req.session.user) return res.status(401).json({ ok: false, message: 'No autorizado' });
   if (!req.session.user.isAdmin) return res.status(403).json({ ok: false, message: 'Requiere permisos de administrador' });
-  db.get('SELECT IFNULL(SUM(total),0) AS deliveredSales, COUNT(*) AS deliveredCount FROM purchases WHERE delivered = 1 AND (hidden IS NULL OR hidden = 0)', [], (err, row) => {
+  db.get('SELECT COALESCE(SUM(total),0) AS deliveredSales, COUNT(*) AS deliveredCount FROM purchases WHERE delivered = 1 AND (hidden IS NULL OR hidden = 0)', [], (err, row) => {
     if (err) return res.status(500).json({ ok: false, message: 'Error de base de datos' });
     res.json({ ok: true, deliveredSales: row.deliveredSales || 0, deliveredCount: row.deliveredCount || 0 });
   });

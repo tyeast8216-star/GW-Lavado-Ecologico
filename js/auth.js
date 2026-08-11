@@ -92,11 +92,8 @@ async function loadAuthLink() {
                 <path d="M2 22c0-3.314 4.686-6 10-6s10 2.686 10 6"></path>
               </svg>
             </a>`;
-          // Prefer inserting before the language selector so the icon sits between cart and language
-          const langEl = container.querySelector('#langSelector');
           const cartEl = container.querySelector('.nav-cart');
           const ul = container.querySelector('.navbar-nav');
-          if (langEl && langEl.parentElement) langEl.parentElement.insertBefore(li, langEl);
           else if (cartEl && cartEl.parentElement) cartEl.parentElement.insertBefore(li, cartEl.nextSibling);
           else if (ul && ul.parentElement) ul.parentElement.appendChild(li);
           else container.appendChild(li);

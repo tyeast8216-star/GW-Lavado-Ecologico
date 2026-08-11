@@ -55,38 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     target.appendChild(a);
                 }
             });
-            // also clone language selector if present
-            const lang = document.getElementById('langSelector');
-            if (lang) {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'drawer-lang-wrap';
-                const cloneLang = lang.cloneNode(true);
-                cloneLang.id = 'drawer-langSelector';
-                // ensure cloned element has our styling classes and no inline styles
-                cloneLang.classList.add('lang-selector','form-control-sm');
-                cloneLang.style.width = '';
-                cloneLang.style.display = '';
-                cloneLang.style.marginLeft = '';
-                // keep change in sync with main selector
-                cloneLang.addEventListener('change', function(){
-                    lang.value = this.value;
-                    lang.dispatchEvent(new Event('change'));
-                });
-                wrapper.appendChild(cloneLang);
-                target.appendChild(wrapper);
-            }
-            // also clone style button if present
-            const styleBtn = document.getElementById('langStyleBtn');
-            if(styleBtn){
-                const cloneBtn = styleBtn.cloneNode(true);
-                cloneBtn.id = 'drawer-langStyleBtn';
-                // when clicked in drawer, trigger main button to cycle variant
-                cloneBtn.addEventListener('click', function(e){
-                    e.preventDefault();
-                    styleBtn.click();
-                });
-                target.appendChild(cloneBtn);
-            }
+            // (language selector removed) -- no cloning required
         }
         drawer.classList.add('open'); backdrop.classList.add('open'); document.body.style.overflow = 'hidden';
     }
