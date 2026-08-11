@@ -31,8 +31,13 @@ app.use(session({
 app.use(express.static(path.join(__dirname)));
 
 // PostgreSQL pool and lightweight compatibility wrapper
+const pgConnectionString = process.env.DATABASE_URL || process.env.PG_CONNECTION;
+if (!pgConnectionString) {
+  console.error('Error: DATABASE_URL or PG_CONNECTION environment variable is required.');
+  process.exit(1);
+}
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.PG_CONNECTION || null,
+  connectionString: pgConnectionString,
   ssl: process.env.PG_SSL === '1' || process.env.PG_SSL === 'true' ? { rejectUnauthorized: false } : false
 });
 
