@@ -2264,4 +2264,144 @@ body.scrolled {
   .lang-selector-wrap { right: 64px; }
 }
 
+
+/* ===================================================
+   SECCIÓN DE FRANQUICIA MASTER
+   =================================================== */
+
+/* 1. El contenedor del Banner Principal */
+.franquicia-master {
+  position: relative;
+  min-height: 500px;
+  margin-top: -90px;
+  /* Altura ideal para que el mapa luzca bien */
+  width: 100%;
+
+  /* Carga aquí la imagen del mapa limpio que guardaste */
+  background-image: url('../images/franquiciamaster.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  /* Flexbox para empujar el contenido hacia la derecha */
+  display: flex;
+  justify-content: flex-end;
+  /* Alinea el contenido a la derecha */
+  align-items: center;
+  /* Centra el contenido verticalmente */
+  overflow: hidden;
+}
+
+/* 2. El OVERLAY (Capa oscura sobre la imagen) */
+.franquicia-master::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Gradiente: más claro a la izquierda (deja ver el mapa) y más oscuro a la derecha (para leer el texto) */
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.2) 20%, rgba(10, 35, 15, 0.85) 80%);
+  z-index: 1;
+}
+
+/* 3. El Bloque de Contenido (Texto y Botón) */
+.franquicia-master-content {
+  position: relative;
+  z-index: 2;
+  /* Se posiciona por encima del overlay */
+  width: 100%;
+  max-width: 550px;
+  /* Evita que las líneas de texto sean demasiado anchas */
+  padding: 40px;
+  margin-right: 3%;
+  /* Margen de separación respecto al borde derecho de la pantalla */
+  color: #ffffff;
+  text-align: right;
+  /* Alineación del texto a la derecha como la referencia */
+}
+
+/* 4. Estilos de los textos internos */
+.franquicia-master-content h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.franquicia-master-content p {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.9);
+  /* Blanco suavizado para una lectura elegante */
+  margin-bottom: 30px;
+}
+
+.franquicia-master img {
+  display: none;
+}
+
+.btn-franquicia {
+  display: block;
+  /* Cambia de inline-block a block para que acepte márgenes automáticos */
+  width: fit-content;
+  /* O un ancho fijo (ej. 250px) para que no ocupe todo el ancho */
+  margin: 30px auto 0 auto;
+  /* Arriba 20px, Derecha AUTO, Abajo 0, Izquierda AUTO */
+
+  /* ... el resto de tus estilos ... */
+  background-color: #1ece2d;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 12px 30px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+/* Efecto hover del botón */
+.btn-franquicia:hover {
+  background-color: #4f9326;
+  /* Un tono verde más oscuro */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* 6. Adaptabilidad para Móviles (Responsive) */
+@media (max-width: 768px) {
+  .franquicia-master {
+    justify-content: center;
+    /* En móviles el texto se centra */
+    min-height: 450px;
+  }
+
+  /* El overlay en móvil se vuelve oscuro completo para mantener legibilidad */
+  .franquicia-master::before {
+    background: rgba(10, 35, 15, 0.85);
+  }
+
+  .franquicia-master-content {
+    margin-right: 0;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .franquicia-master-content h2 {
+    font-size: 2rem;
+  }
+
+  .franquicia-master img {
+    display: block;
+    width: 100%;
+    max-width: 500px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+}
 /*# sourceMappingURL=style.css.map */
