@@ -10,20 +10,18 @@ async function loadAuthLink() {
     const explicitBase = (window.API_BASE || '').replace(/\/$/, '');
     const baseOrigin = (window.location.origin || '').replace(/\/$/, '');
     const candidateBases = [];
-    if (explicitBase) {
-      candidateBases.push(explicitBase);
-    }
-    if (baseOrigin && candidateBases.indexOf(baseOrigin) === -1) {
-      candidateBases.push(baseOrigin);
-    }
+    if (baseOrigin) candidateBases.push(baseOrigin);
+    if (explicitBase && candidateBases.indexOf(explicitBase) === -1) candidateBases.push(explicitBase);
     // try a range of localhost ports (useful if server auto-incremented)
     for (let p = 3000; p <= 3010; p++) candidateBases.push('http://localhost:' + p);
 
     let data;
     let usedBase = null;
-    for (const base of candidatePorts) {
+    const basesToTry = [''].concat(candidateBases);
+    for (const base of basesToTry) {
       try {
-        const res = await fetch(base + '/api/me', { credentials: 'include', cache: 'no-store' });
+        const url = base ? (base + '/api/me') : '/api/me';
+        const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
         const parsed = await userApiFromResponse(res);
         if (parsed && !parsed.__nonJson) { data = parsed; usedBase = base; break; }
         // if non-JSON and contains Express 404 text, continue to next
