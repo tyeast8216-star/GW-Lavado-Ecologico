@@ -177,7 +177,7 @@ app.post('/login', (req, res) => {
   });
 });
 
-app.post('/register', (req, res) => {
+app.post(['/register', '/register.html'], (req, res) => {
   const { name, email, password, phone } = req.body;
   const verificationCode = req.body.verificationCode;
   if (!email || !password) return sendError(res, 'Faltan datos', 400);
