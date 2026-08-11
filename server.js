@@ -167,8 +167,9 @@ pool.on('error', (err) => {
 
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return sendError(res, 'Faltan credenciales', 400);
-  db.get('SELECT id,name,email,passwordHash,isAdmin FROM users WHERE email = ?', [email], (err, row) => {
+  const emailTrim = String(email || '').trim().toLowerCase();
+  if (!emailTrim || !password) return sendError(res, 'Faltan credenciales', 400);
+  db.get('SELECT id,name,email,passwordHash,isAdmin FROM users WHERE email = ?', [emailTrim], (err, row) => {
     if (err) return sendServerError(res, 'Error al verificar las credenciales', err);
     if (!row) return sendError(res, 'Usuario o contraseña incorrectos', 401);
     const match = bcrypt.compareSync(password, row.passwordHash);
@@ -181,22 +182,23 @@ app.post('/login', (req, res) => {
 app.post(['/register', '/register.html'], (req, res) => {
   const { name, email, password, phone } = req.body;
   const verificationCode = req.body.verificationCode;
-  if (!email || !password) return sendError(res, 'Faltan datos', 400);
+  const emailTrim = String(email || '').trim().toLowerCase();
+  if (!emailTrim || !password) return sendError(res, 'Faltan datos', 400);
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) return sendError(res, 'Email inválido', 400);
+  if (!emailRegex.test(emailTrim)) return sendError(res, 'Email inválido', 400);
   if (password.length < 8) return sendError(res, 'La contraseña debe tener al menos 8 caracteres', 400);
-  db.get('SELECT id FROM users WHERE email = ?', [email], (err, row) => {
+  db.get('SELECT id FROM users WHERE email = ?', [emailTrim], (err, row) => {
     if (err) return sendServerError(res, 'Error al comprobar el email', err);
     if (row) return sendError(res, 'El correo ya está registrado', 409);
     if (!verificationCode) return sendError(res, 'Se requiere verificar el correo antes de registrarse', 400);
-    db.get('SELECT code,expires_at FROM email_verifications WHERE email = ? ORDER BY id DESC LIMIT 1', [email], (e2, vr) => {
+    db.get('SELECT code,expires_at FROM email_verifications WHERE email = ? ORDER BY id DESC LIMIT 1', [emailTrim], (e2, vr) => {
       if (e2) return sendServerError(res, 'Error al comprobar el código de verificación', e2);
       const now = Math.floor(Date.now()/1000);
       if (!vr || vr.code !== String(verificationCode) || !vr.expires_at || vr.expires_at < now) return sendError(res, 'Código de verificación inválido o caducado', 400);
       const passwordHash = bcrypt.hashSync(password, 10);
-      db.run('INSERT INTO users (name,email,passwordHash,isAdmin,phone) VALUES (?,?,?,?,?)', [name, email, passwordHash, 0, phone || null], function(err) {
+      db.run('INSERT INTO users (name,email,passwordHash,isAdmin,phone) VALUES (?,?,?,?,?)', [name, emailTrim, passwordHash, 0, phone || null], function(err) {
         if (err) return sendServerError(res, 'Error al registrar el usuario', err);
-        req.session.user = { id: this.lastID, name: name || '', email, isAdmin: false };
+        req.session.user = { id: this.lastID, name: name || '', email: emailTrim, isAdmin: false };
         sendSuccess(res);
       });
     });
