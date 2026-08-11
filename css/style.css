@@ -565,7 +565,25 @@ video, iframe {
 body {
   font-family: "Poppins", sans-serif;
   color: #0c0c0c;
-  background-color: #faf9f9;
+  background-color: #ffff;
+  text-align: justify;
+}
+
+.custom_nav-container,
+.custom_nav-container .navbar-nav,
+.custom_nav-container .navbar-brand,
+.topbar-content,
+.navbar-toggler,
+.nav_cart,
+.btn,
+.btn-whatsapp,
+.social-box,
+.phone-contact,
+.footer_bg,
+.login-form label,
+.contact_section .contact_heading,
+.form-inline {
+  text-align: left !important;
 }
 
 .layout_padding {
@@ -592,37 +610,28 @@ body {
   padding-bottom: 75px;
 }
 
-.custom_heading-container2 {
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-box-pack: center;
-      -ms-flex-pack: center;
-          justify-content: center;
-}
-.custom_heading-container2 h2 {
-  font-weight: 800;
-  font-size: 28px;
-  color: #ffffff;
-  border-bottom: 3px solid rgba(225, 222, 222, 0.12);
-  padding-bottom: 10px;
-  margin-bottom: 8px;
-}
-
 .custom_heading-container {
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
   -webkit-box-pack: center;
       -ms-flex-pack: center;
           justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  text-align: center;
 }
 
 .custom_heading-container h2 {
   font-weight: 800;
   font-size: 28px;
   color: #063b2e;
-  border-bottom: 3px solid rgba(19,127,74,0.12);
+  border-bottom: 3px solid rgba(82, 190, 46, 0.99);
   padding-bottom: 10px;
   margin-bottom: 8px;
 }
@@ -855,6 +864,32 @@ a:focus {
 .custom_nav-container .navbar-nav { flex-wrap: nowrap; }
 .custom_nav-container .navbar-nav .nav-item { white-space: nowrap; }
 
+.nav-link-action {
+  border-radius: 32px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.92);
+  color: #111 !important;
+  padding: 8px 14px !important;
+  margin: 0 !important;
+  transition: background .2s ease, color .2s ease, transform .15s ease;
+}
+.nav-link-action:hover,
+.nav-link-action:focus {
+  background: #111 !important;
+  color: #fff !important;
+  text-decoration: none;
+}
+
+@media (max-width: 991.98px) {
+  .nav-link-action {
+    width: 100%;
+    text-align: center;
+    background: #f7f7f7 !important;
+    color: #111 !important;
+    border-color: rgba(0,0,0,0.1) !important;
+  }
+}
+
 /* center navbar contents on large screens */
 @media (min-width: 992px) {
   .custom_nav-container .navbar-collapse { display: flex !important; align-items: center; justify-content: center; }
@@ -873,7 +908,6 @@ a:focus {
   .custom_nav-container .navbar-brand img { margin-left: 0 !important; }
   .header_section .row { justify-content: center; }
   .header_section .col-lg-8 { width: 100% !important; max-width: 100% !important; margin-left: auto; margin-right: auto; }
-  .custom_nav-container .navbar-collapse .d-flex .lang-selector { margin-left: 0 !important; }
   .custom_nav-container .navbar-collapse .d-flex > * { margin: 0; }
 }
 @media (max-width: 991.98px) {
@@ -1193,17 +1227,28 @@ a:focus {
   padding: 60px 0;
 }
 
+.logo-header2 {
+  display: block;
+  width: 120px;
+  height: auto;
+  margin: 0 auto;
+  margin-bottom: 40px;
+}
 .welcome_section .custom_heading-container {
   text-align: left;
   justify-content: flex-start;
 }
+
 /* Contenedor principal que junta ambos bloques */
 .contact-block-container {
   display: flex;
   align-items: center;
-  gap: 30px; /* Espacio entre el botón y el teléfono */
-  font-family: sans-serif; /* Usa la misma fuente de tu web */
-  margin-top: 60px; /* Margen superior opcional */
+  gap: 30px;
+  /* Espacio entre el botón y el teléfono */
+  font-family: sans-serif;
+  /* Usa la misma fuente de tu web */
+  margin-top: 60px;
+  /* Margen superior opcional */
 }
 
 /* --- ESTILOS DEL BOTÓN WHATSAPP --- */
@@ -1212,7 +1257,8 @@ a:focus {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background-color: #1e81ce; /* Azul exacto de tu captura */
+  background-color: #1ece2d;
+  /* Azul exacto de tu captura */
   color: #ffffff;
   font-weight: bold;
   font-size: 14px;
@@ -1223,6 +1269,28 @@ a:focus {
   transition: background-color 0.2s ease;
 }
 
+.separador {
+  text-align: center;
+  background-image: url(../images/separador.png);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  margin-top: 50px;
+  height: 200px;
+  margin-bottom: 0px;
+  padding-bottom: 0px;
+
+  h2 {
+    font-weight: bold;
+    font-size: 30px;
+    line-height: 1.2;
+    margin: 0;
+    color: #ffff;
+    padding-top: 50px;
+    /* Ajusta según sea necesario */
+  }
+}
+
 .btn-whatsapp:hover {
   background-color: #156dae;
 }
@@ -1231,8 +1299,8 @@ a:focus {
   position: fixed;
   right: 18px;
   bottom: 18px;
-  width: 60px;
-  height: 60px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background-color: #25d366;
   display: inline-flex;
@@ -1240,14 +1308,14 @@ a:focus {
   justify-content: center;
   color: #fff;
   text-decoration: none;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.18);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
   z-index: 11000;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .whatsapp-float:hover {
   transform: translateY(-2px);
-  box-shadow: 0 24px 44px rgba(0,0,0,0.22);
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.22);
 }
 
 .whatsapp-float .fab {
@@ -1258,22 +1326,27 @@ a:focus {
 .phone-contact {
   display: flex;
   align-items: center;
-  gap: 15px; /* Espacio entre el icono del teléfono y el texto */
+  gap: 15px;
+  /* Espacio entre el icono del teléfono y el texto */
   padding-left: 30px;
-  border-left: 1px solid #e0e0e0; /* La línea gris divisoria */
+  border-left: 1px solid #e0e0e0;
+  /* La línea gris divisoria */
 }
 
 /* Icono SVG del teléfono */
 .phone-icon {
-  width: 28px;
-  height: 28px;
-  color: #333333; /* Color oscuro para el icono */
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  display: block;
 }
 
 /* Contenedor de los textos del teléfono */
 .phone-text {
   display: flex;
-  flex-direction: column; /* Pone un texto encima del otro */
+  flex-direction: column;
+  /* Pone un texto encima del otro */
 }
 
 /* Texto pequeño "COMUNÍCATE CON NOSOTROS" */
@@ -1294,8 +1367,10 @@ a:focus {
 }
 
 .phone-number:hover {
-  color: #1e81ce; /* Opcional: cambia a azul al pasar el cursor */
+  color: #1ece2d;
+  /* Opcional: cambia a azul al pasar el cursor */
 }
+
 .welcome_section .custom_heading-container h2 {
   font-size: 40px;
   font-weight: 700;
@@ -1307,6 +1382,53 @@ a:focus {
   width: 60px;
   height: 6px;
   background: #2d75a7;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.welcome_section h3 {
+  font-size: 18px;
+  color: #6b6b6b;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.welcome_section .detail-box p {
+  color: #6b6b6b;
+  line-height: 1.8;
+  font-size: 16px;
+}
+
+.welcome_section .detail-box .btn {
+  margin-top: 20px;
+}
+
+.welcome_section .img-box {
+  text-align: right;
+  overflow: hidden;
+  margin-bottom: -50px;
+}
+
+.welcome_section .img-box img {
+  width: 100%;
+  max-width: 540px;
+  height: auto;
+  display: inline-block;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(20, 30, 50, 0.12);
+}
+
+.welcome_section .custom_heading-container h2 {
+  font-size: 40px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  letter-spacing: 1px;
+}
+
+.welcome_section .heading-underline {
+  width: 60px;
+  height: 6px;
+  background: #2bcf16;
   border-radius: 4px;
   margin-bottom: 20px;
 }
@@ -1530,7 +1652,7 @@ a:focus {
 .service_section {
   text-align: center;
   color: #f9fcfb;
-  background: #fff;
+  background-color: rgb(249, 249, 249);
   background-size: 100% 100%;
   padding-top: 100px;
   padding-bottom: 60px;
@@ -1976,6 +2098,7 @@ a:focus {
   height: 8rem;
   z-index: 99999;
   background: white;
+  border-bottom: 3px solid rgba(82, 190, 46, 0.99);
   transition: background-color 240ms ease, -webkit-backdrop-filter 240ms ease;
 }
 
@@ -2031,113 +2154,144 @@ body.scrolled {
   padding-top: 70px;
 }
 
-/* Language selector styling */
-.lang-selector {
-  -webkit-appearance: none;
-  appearance: none;
-  background: rgba(255,255,255,0.55);
-  border: 1px solid rgba(12,18,30,0.04);
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  min-width: 56px;
-  text-align: center;
-  box-shadow: none;
-  backdrop-filter: blur(6px);
-  color: #0c121e;
-  transition: background-color .18s ease, transform .12s ease, opacity .18s ease;
-  opacity: 0.9;
-}
 
-.lang-selector:hover, .lang-selector:focus {
-  background: rgba(255,255,255,0.82);
-  opacity: 1;
-  transform: translateY(-1px);
-  outline: none;
-}
+/* ===================================================
+   SECCIÓN DE FRANQUICIA MASTER
+   =================================================== */
 
-/* compact language selector: override wide inline padding and limit width */
-.lang-selector { padding-left: 8px !important; padding-right:8px !important; width: auto !important; max-width:120px !important; }
+/* 1. El contenedor del Banner Principal */
+.franquicia-master {
+  position: relative;
+  min-height: 500px;
+  margin-top: -90px;
+  /* Altura ideal para que el mapa luzca bien */
+  width: 100%;
 
-@media (min-width: 992px) {
-  /* push to the far right inside the navbar container */
-  .custom_nav-container .navbar-collapse .d-flex .lang-selector { margin-left: auto; margin-right: 16px; }
-}
+  /* Carga aquí la imagen del mapa limpio que guardaste */
+  background-image: url('../images/franquiciamaster.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 
-/* drawer/mobile: make selector full width inside side-drawer */
-#drawer-nav .lang-selector, #drawer-langSelector { width: 100%; margin: 12px 0; }
-
-/* wrapper for drawer selector */
-.drawer-lang-wrap { padding: 6px 0; }
-
-/* style button */
-.lang-style-btn {
-  background: transparent;
-  border: none;
-  font-size: 16px;
-  margin-left: 18px;
-  cursor: pointer;
-  opacity: 0.85;
-}
-
-@media (min-width: 992px) {
-.lang-compact-btn {
-  margin-left: 32rem;
-}
-}
-.lang-style-btn:hover { opacity: 1; }
-
-/* dark variant */
-.lang-variant-dark {
-  background: rgba(22,28,36,0.82) !important;
-  color: #fff !important;
-  border-color: rgba(255,255,255,0.06) !important;
-}
-
-/* compact variant: hide select, show compact button */
-.lang-compact-btn {
-  display: inline-block;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(12,18,30,0.04);
-  color: #111;
-  padding: 6px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 700;
-}
-.lang-compact-menu {
-  display: none;
-  flex-direction: column;
-  gap: 6px;
-  background: #fff;
-  border: 1px solid rgba(12,18,30,0.06);
-  padding: 6px;
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(12, 18, 30, 0.08);
-  z-index: 1200;
-}
-.lang-compact-menu.open { display: flex; }
-.lang-compact-item { background: transparent; border: none; padding: 6px 10px; cursor: pointer; font-weight:700; }
-.lang-compact-item:hover { background: rgba(0,0,0,0.04); }
-
-
-/* wrapper to place selector in top-right corner */
-.lang-selector-wrap {
-  position: absolute;
-  top: 10px;
-  right: 12px;
+  /* Flexbox para empujar el contenido hacia la derecha */
   display: flex;
-  gap: 8px;
+  justify-content: flex-end;
+  /* Alinea el contenido a la derecha */
   align-items: center;
-  z-index: 1100;
-}
-@media (min-width: 992px) {
-  .lang-selector-wrap { right: 16px; }
-}
-@media (max-width: 991.98px) {
-  /* move left a bit to avoid overlapping the navbar toggler */
-  .lang-selector-wrap { right: 64px; }
+  /* Centra el contenido verticalmente */
+  overflow: hidden;
 }
 
+/* 2. El OVERLAY (Capa oscura sobre la imagen) */
+.franquicia-master::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Gradiente: más claro a la izquierda (deja ver el mapa) y más oscuro a la derecha (para leer el texto) */
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.2) 20%, rgba(10, 35, 15, 0.85) 80%);
+  z-index: 1;
+}
+
+/* 3. El Bloque de Contenido (Texto y Botón) */
+.franquicia-master-content {
+  position: relative;
+  z-index: 2;
+  /* Se posiciona por encima del overlay */
+  width: 100%;
+  max-width: 550px;
+  /* Evita que las líneas de texto sean demasiado anchas */
+  padding: 40px;
+  margin-right: 3%;
+  /* Margen de separación respecto al borde derecho de la pantalla */
+  color: #ffffff;
+  text-align: right;
+  /* Alineación del texto a la derecha como la referencia */
+}
+
+/* 4. Estilos de los textos internos */
+.franquicia-master-content h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.franquicia-master-content p {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.9);
+  /* Blanco suavizado para una lectura elegante */
+  margin-bottom: 30px;
+}
+
+.franquicia-master img {
+  display: none;
+}
+
+.btn-franquicia {
+  display: block;
+  /* Cambia de inline-block a block para que acepte márgenes automáticos */
+  width: fit-content;
+  /* O un ancho fijo (ej. 250px) para que no ocupe todo el ancho */
+  margin: 30px auto 0 auto;
+  /* Arriba 20px, Derecha AUTO, Abajo 0, Izquierda AUTO */
+
+  /* ... el resto de tus estilos ... */
+  background-color: #1ece2d;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 12px 30px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+/* Efecto hover del botón */
+.btn-franquicia:hover {
+  background-color: #4f9326;
+  /* Un tono verde más oscuro */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* 6. Adaptabilidad para Móviles (Responsive) */
+@media (max-width: 768px) {
+  .franquicia-master {
+    justify-content: center;
+    /* En móviles el texto se centra */
+    min-height: 450px;
+  }
+
+  /* El overlay en móvil se vuelve oscuro completo para mantener legibilidad */
+  .franquicia-master::before {
+    background: rgba(10, 35, 15, 0.85);
+  }
+
+  .franquicia-master-content {
+    margin-right: 0;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .franquicia-master-content h2 {
+    font-size: 2rem;
+  }
+
+  .franquicia-master img {
+    display: block;
+    width: 100%;
+    max-width: 500px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+}
 /*# sourceMappingURL=style.css.map */

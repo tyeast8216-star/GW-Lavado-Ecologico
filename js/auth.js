@@ -36,8 +36,7 @@ async function loadAuthLink() {
     const isAdmin = !!data.user.isAdmin;
     console.log('auth check /api/me ->', data, 'usedBase=', usedBase, 'document.cookie=', document.cookie.slice(0, 200));
     const insertAdminLink = () => {
-      // do not insert if admin anchor or admin li already exists
-      if (document.getElementById('admin-nav-link') || document.getElementById('admin-nav-anchor')) return false;
+      if (document.getElementById('admin-nav-link')) return false;
       const navs = document.querySelectorAll('.navbar-nav');
       if (!navs || navs.length === 0) return false;
       let inserted = false;
@@ -46,12 +45,8 @@ async function loadAuthLink() {
           if (nav && !nav.querySelector('#admin-nav-link')) {
             const li = document.createElement('li');
             li.id = 'admin-nav-link';
-            li.className = 'nav-item icon-nav-item';
-            li.innerHTML = '<a class="nav-link no-dot" href="/dashboard.html" title="Panel administración" style="color:#000 !important; display: inline-flex; align-items: center; padding: 6px 4px !important; margin: 0 !important;">'
-  + '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="20" height="20" style="fill: #000 !important; stroke: #000 !important; color: #000 !important;" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-  + '<path d="M320 64C324.6 64 329.2 65 333.4 66.9L521.8 146.8C543.8 156.1 560.2 177.8 560.1 204C559.6 303.2 518.8 484.7 346.5 567.2C329.8 575.2 310.4 575.2 293.7 567.2C121.3 484.7 80.6 303.2 80.1 204C80 177.8 96.4 156.1 118.4 146.8L306.7 66.9C310.9 65 315.4 64 320 64zM320 130.8L320 508.9C458 442.1 495.1 294.1 496 205.5L320 130.9L320 130.9z"/>'
-  + '</svg>'
-  + '</a>';
+            li.className = 'nav-item';
+            li.innerHTML = '<a class="nav-link nav-link-action" href="/dashboard.html" title="Panel administración">Panel administración</a>';
             const accountLink = nav.querySelector('#account-nav-link');
             if (accountLink && accountLink.parentElement) {
               accountLink.parentElement.insertBefore(li, accountLink);
@@ -65,44 +60,28 @@ async function loadAuthLink() {
       });
       return inserted;
     };
-    // add account icon for any logged-in user
+    // add dashboard/account link for any logged-in user
     const insertAccountLink = () => {
-      // avoid inserting more than one globally
       if (document.getElementById('account-nav-link')) return true;
-      try {
-        const navContainers = document.querySelectorAll('.navbar-nav, .collapse.navbar-collapse, .custom_nav-container');
-        if (!navContainers || navContainers.length === 0) return false;
-        navContainers.forEach(container => {
-          if (document.getElementById('account-nav-link')) return;
-          const li = document.createElement('li');
-          li.id = 'account-nav-link';
-          li.className = 'nav-item icon-nav-item';
-          // if user is admin, inject the admin icon inline before the account icon
-          const adminHtml = isAdmin ?
-            ('<a id="admin-nav-anchor" class="nav-link no-dot admin-inline" href="/dashboard.html" title="Panel administración" style="color:#000 !important;display:inline-flex;align-items:center;padding:6px 4px !important;margin:0 !important">'
-            + '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="20" height="20" style="fill: #000 !important; stroke: #000 !important; color: #000 !important;" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-            + '<path d="M320 64C324.6 64 329.2 65 333.4 66.9L521.8 146.8C543.8 156.1 560.2 177.8 560.1 204C559.6 303.2 518.8 484.7 346.5 567.2C329.8 575.2 310.4 575.2 293.7 567.2C121.3 484.7 80.6 303.2 80.1 204C80 177.8 96.4 156.1 118.4 146.8L306.7 66.9C310.9 65 315.4 64 320 64zM320 130.8L320 508.9C458 442.1 495.1 294.1 496 205.5L320 130.9L320 130.9z"/>'
-            + '</svg>'
-            + '</a>') : '';
-
-          li.innerHTML = adminHtml + `
-            <a class="nav-link" href="/user-dashboard.html" title="Mi cuenta" style="display:flex;align-items:center;color:#fff;padding:6px 4px !important;margin:0 !important">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z"></path>
-                <path d="M2 22c0-3.314 4.686-6 10-6s10 2.686 10 6"></path>
-              </svg>
-            </a>`;
-          // Prefer inserting before the language selector so the icon sits between cart and language
-          const langEl = container.querySelector('#langSelector');
-          const cartEl = container.querySelector('.nav-cart');
-          const ul = container.querySelector('.navbar-nav');
-          if (langEl && langEl.parentElement) langEl.parentElement.insertBefore(li, langEl);
-          else if (cartEl && cartEl.parentElement) cartEl.parentElement.insertBefore(li, cartEl.nextSibling);
-          else if (ul && ul.parentElement) ul.parentElement.appendChild(li);
-          else container.appendChild(li);
-        });
-        return true;
-      } catch (err) { console.warn('auth: error injecting account link', err); return false; }
+      const navs = document.querySelectorAll('.navbar-nav');
+      if (!navs || navs.length === 0) return false;
+      navs.forEach(nav => {
+        try {
+          if (nav && !nav.querySelector('#account-nav-link')) {
+            const li = document.createElement('li');
+            li.id = 'account-nav-link';
+            li.className = 'nav-item';
+            li.innerHTML = '<a class="nav-link nav-link-action" href="/user-dashboard.html" title="Mi cuenta">Mi cuenta</a>';
+            const loginLink = nav.querySelector('a[href*="login.html"]');
+            if (loginLink && loginLink.parentElement) {
+              loginLink.parentElement.insertAdjacentElement('afterend', li);
+            } else {
+              nav.appendChild(li);
+            }
+          }
+        } catch (err) { console.warn('auth: error injecting account link', err); }
+      });
+      return true;
     };
     // try immediate insert, otherwise retry a few times
     if (!insertAccountLink()) {
@@ -126,8 +105,8 @@ async function loadAuthLink() {
     // hide any 'Login' links when authenticated
     const hideLoginLinks = () => {
       try {
-        // anchors that explicitly link to login.html or have data-i18n nav_login
-        const sel = 'a[href*="login.html"], a[data-i18n="nav_login"]';
+        // anchors that explicitly link to login.html
+        const sel = 'a[href*="login.html"]';
         document.querySelectorAll(sel).forEach(el => el.style.display = 'none');
         // also hide by visible text (Spanish/English)
         document.querySelectorAll('.nav-item a').forEach(a => {
@@ -276,7 +255,7 @@ function openLoginModal() {
 }
 
 function attachLoginLinkInterception() {
-  const selector = 'a[href*="login.html"], a[data-i18n="nav_login"]';
+  const selector = 'a[href*="login.html"]';
   document.querySelectorAll(selector).forEach(link => {
     if (link.dataset.loginModalBound) return;
     link.addEventListener('click', function (event) {
@@ -289,7 +268,7 @@ function attachLoginLinkInterception() {
   });
 
   document.addEventListener('click', function (event) {
-    const link = event.target.closest('a[href*="login.html"], a[data-i18n="nav_login"]');
+    const link = event.target.closest('a[href*="login.html"]');
     if (!link) return;
     if (link.dataset.loginModalBound) return;
     event.preventDefault();
