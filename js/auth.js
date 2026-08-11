@@ -94,7 +94,7 @@ async function loadAuthLink() {
             </a>`;
           const cartEl = container.querySelector('.nav-cart');
           const ul = container.querySelector('.navbar-nav');
-          else if (cartEl && cartEl.parentElement) cartEl.parentElement.insertBefore(li, cartEl.nextSibling);
+          if (cartEl && cartEl.parentElement) cartEl.parentElement.insertBefore(li, cartEl.nextSibling);
           else if (ul && ul.parentElement) ul.parentElement.appendChild(li);
           else container.appendChild(li);
         });
