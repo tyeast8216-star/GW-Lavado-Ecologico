@@ -484,7 +484,13 @@ function attachRegisterFormHandler() {
         if (resp && resp.ok) {
           const area = document.getElementById('email-verification-area');
           if (area) area.style.display = 'block';
-          try { showToast('Código enviado al correo. Ingresa el código y vuelve a enviar.', 'success'); } catch (e) { }
+          const codeInput = document.getElementById('email-code');
+          if (resp.code && codeInput) {
+            codeInput.value = resp.code;
+          }
+          let msg = 'Código enviado al correo. Ingresa el código y vuelve a enviar.';
+          if (resp.code) msg = `Código de verificación: ${resp.code}. Ingresa el código y vuelve a enviar.`;
+          try { showToast(msg, 'success'); } catch (e) { }
           return;
         }
         try { showToast(resp && resp.message ? resp.message : 'No se pudo enviar el código de verificación', 'danger'); } catch (e) { }

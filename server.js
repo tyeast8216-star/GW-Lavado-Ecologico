@@ -210,56 +210,61 @@ app.post('/api/send-verification', (req, res) => {
   const emailTrim = String(email).trim();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(emailTrim)) return res.json({ ok: false, message: 'Email inválido' });
-  const code = String(Math.floor(100000 + Math.random()*900000));
-  const expiresAt = Math.floor(Date.now()/1000) + (10*60); // 10 minutes
-  db.run('INSERT INTO email_verifications (email, code, expires_at) VALUES (?,?,?)', [emailTrim, code, expiresAt], function(err){
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const expiresAt = Math.floor(Date.now() / 1000) + (10 * 60); // 10 minutes
+  db.run('INSERT INTO email_verifications (email, code, expires_at) VALUES (?,?,?)', [emailTrim, code, expiresAt], function (err) {
     if (err) {
       console.error('DB insert verification error', err);
       return sendServerError(res, 'Error al generar el código de verificación', err);
     }
-    // send email via nodemailer if configured
     const smtpHost = process.env.SMTP_HOST;
-    if (smtpHost) {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: Number(process.env.SMTP_PORT||587),
-        secure: process.env.SMTP_SECURE === '1' || process.env.SMTP_SECURE === 'true',
-        auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
-        tls: { rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED !== 'false' }
-      });
-      const from = process.env.FROM_EMAIL || ('no-reply@' + (req.hostname || 'localhost'));
-      const mailOptions = { from, to: emailTrim, subject: 'GW Lavado Ecologico -Código de verificación', text: `Bienvenido a GW Lavado Ecologico! Tu código de verificación es: ${code} (válido 10 minutos)` };
-      // verify transporter connection first for clearer errors
-      transporter.verify((verErr, success) => {
-        if (verErr) {
-          console.error('SMTP verify error:', verErr && verErr.message ? verErr.message : verErr);
-          const responseBody = { ok: true, sent: false, message: 'No se pudo conectar al servidor de correo' };
-          if (showVerificationCode) responseBody.code = code;
-          if (!isProd) responseBody.detail = verErr && verErr.message ? String(verErr.message) : String(verErr);
+    if (!smtpHost) {
+      console.log(`Verification code for ${emailTrim}: ${code} (SMTP not configured)`);
+      return res.json({ ok: true, sent: false, dev: true, code, message: 'SMTP no configurado. Usa este código para verificar tu correo.' });
+    }
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === '1' || process.env.SMTP_SECURE === 'true',
+      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
+      tls: { rejectUnauthorized: process.env.SMTP_REJECT_UNAUTHORIZED !== 'false' }
+    });
+    const from = process.env.FROM_EMAIL || ('no-reply@' + (req.hostname || 'localhost'));
+    const mailOptions = {
+      from,
+      to: emailTrim,
+      subject: 'GW Lavado Ecologico - Código de verificación',
+      text: `Bienvenido a GW Lavado Ecologico! Tu código de verificación es: ${code} (válido 10 minutos)`
+    };
+    transporter.verify((verErr) => {
+      if (verErr) {
+        console.error('SMTP verify error:', verErr && verErr.message ? verErr.message : verErr);
+        const responseBody = {
+          ok: true,
+          sent: false,
+          message: 'No se pudo conectar al servidor de correo. Usa este código para verificar tu correo.',
+          code
+        };
+        if (!isProd) responseBody.detail = verErr && verErr.message ? String(verErr.message) : String(verErr);
+        return res.json(responseBody);
+      }
+      transporter.sendMail(mailOptions, (mailErr, info) => {
+        if (mailErr) {
+          console.error('Mail send error', mailErr && mailErr.message ? mailErr.message : mailErr);
+          const responseBody = {
+            ok: true,
+            sent: false,
+            message: 'No se pudo enviar el correo. Usa este código para verificar tu correo.',
+            code
+          };
+          if (!isProd) responseBody.detail = mailErr && mailErr.message ? String(mailErr.message) : String(mailErr);
           return res.json(responseBody);
         }
-        transporter.sendMail(mailOptions, (mailErr, info) => {
-          if (mailErr) {
-            console.error('Mail send error', mailErr && mailErr.message ? mailErr.message : mailErr);
-            const responseBody = { ok: true, sent: false, message: 'No se pudo enviar el correo' };
-            if (showVerificationCode) responseBody.code = code;
-            if (!isProd) responseBody.detail = mailErr && mailErr.message ? String(mailErr.message) : String(mailErr);
-            return res.json(responseBody);
-          }
-          console.log('Verification email sent to', emailTrim, 'info:', info && info.response ? info.response : info);
-          const responseBody = { ok: true, sent: true };
-          if (showVerificationCode) responseBody.code = code;
-          return res.json(responseBody);
-        });
+        console.log('Verification email sent to', emailTrim, 'info:', info && info.response ? info.response : info);
+        const responseBody = { ok: true, sent: true, code: showVerificationCode ? code : undefined };
+        return res.json(responseBody);
       });
-    } else {
-      // no SMTP configured — in development, log code to console and optionally return it in the response
-      console.log(`Verification code for ${emailTrim}: ${code}`);
-      const showCode = (process.env.SHOW_VERIFICATION_CODE === '1') || (process.env.NODE_ENV !== 'production');
-      const resp = { ok: true, sent: false, dev: true };
-      if (showCode) resp.code = code;
-      res.json(resp);
-    }
+    });
   });
 });
 
