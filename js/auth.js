@@ -436,30 +436,32 @@ function attachResetPasswordFlow() {
 }
 
 function attachLoginFormHandler() {
-  const form = document.getElementById('loginModalForm');
-  if (!form || form.dataset.loginBound) return;
-  form.addEventListener('submit', async function (event) {
-    event.preventDefault();
-    const email = (document.getElementById('modal-login-email') || {}).value || '';
-    const password = (document.getElementById('modal-login-password') || {}).value || '';
-    if (!email || !password) {
-      try { showToast('Por favor ingresa correo y contraseña', 'danger'); } catch (e) { }
-      return;
-    }
-    try {
-      const resp = await postToApi('/login', { email, password });
-      if (resp && resp.ok) {
-        try { if (window.jQuery) { window.jQuery('#loginModal').modal('hide'); $('.modal-backdrop').remove(); document.body.classList.remove('modal-open'); } } catch (e) { }
-        window.location.href = '/';
+  const forms = Array.from(document.querySelectorAll('.login-form'));
+  forms.forEach(form => {
+    if (!form || form.dataset.loginBound) return;
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const email = (form.querySelector('input[name="email"]') || {}).value || '';
+      const password = (form.querySelector('input[name="password"]') || {}).value || '';
+      if (!email || !password) {
+        try { showToast('Por favor ingresa correo y contraseña', 'danger'); } catch (e) { }
         return;
       }
-      try { showToast(resp && resp.message ? resp.message : 'Credenciales incorrectas', 'danger'); } catch (e) { }
-    } catch (err) {
-      console.error('login submit error', err);
-      try { showToast('Error de conexión con el servidor', 'danger'); } catch (e) { }
-    }
+      try {
+        const resp = await postToApi('/login', { email, password });
+        if (resp && resp.ok) {
+          try { if (window.jQuery) { window.jQuery('#loginModal').modal('hide'); $('.modal-backdrop').remove(); document.body.classList.remove('modal-open'); } } catch (e) { }
+          window.location.href = '/';
+          return;
+        }
+        try { showToast(resp && resp.message ? resp.message : 'Credenciales incorrectas', 'danger'); } catch (e) { }
+      } catch (err) {
+        console.error('login submit error', err);
+        try { showToast('Error de conexión con el servidor', 'danger'); } catch (e) { }
+      }
+    });
+    form.dataset.loginBound = '1';
   });
-  form.dataset.loginBound = '1';
 }
 
 function attachRegisterFormHandler() {
