@@ -42,7 +42,11 @@ async function loadAuthLink() {
     const insertAdminLink = () => {
       // do not insert if admin anchor or admin li already exists
       if (document.getElementById('admin-nav-link') || document.getElementById('admin-nav-anchor')) return false;
-      const navContainers = document.querySelectorAll('.navbar-nav, .collapse.navbar-collapse, .custom_nav-container, header');
+      const containerSelectors = ['.topbar-actions', '.topbar-nav', '.navbar-nav', '.collapse.navbar-collapse', '.custom_nav-container', 'header'];
+      const navContainers = [];
+      containerSelectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => { if (el && !navContainers.includes(el)) navContainers.push(el); });
+      });
       if (!navContainers || navContainers.length === 0) return false;
       let inserted = false;
       navContainers.forEach(container => {
