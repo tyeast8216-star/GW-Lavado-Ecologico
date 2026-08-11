@@ -32,13 +32,15 @@ app.use(express.static(path.join(__dirname)));
 
 // PostgreSQL pool and lightweight compatibility wrapper
 const pgConnectionString = process.env.DATABASE_URL || process.env.PG_CONNECTION;
+const enablePgSsl = process.env.PG_SSL === '1' || process.env.PG_SSL === 'true';
 if (!pgConnectionString) {
   console.error('Error: DATABASE_URL or PG_CONNECTION environment variable is required.');
   process.exit(1);
 }
+console.log('Postgres config: DATABASE_URL present=', !!pgConnectionString, 'PG_SSL=', enablePgSsl);
 const pool = new Pool({
   connectionString: pgConnectionString,
-  ssl: process.env.PG_SSL === '1' || process.env.PG_SSL === 'true' ? { rejectUnauthorized: false } : false
+  ssl: enablePgSsl ? { rejectUnauthorized: false } : false
 });
 
 function toPg(sql) {
@@ -74,6 +76,8 @@ const db = {
 // Initialize schema on startup
 (async function initDb(){
   try{
+    await pool.query('SELECT 1');
+    console.log('Postgres connection verified.');
     await pool.query(`CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       name TEXT,
@@ -133,8 +137,15 @@ const db = {
       const demoHash = bcrypt.hashSync('password123', 10);
       await pool.query('INSERT INTO users (name,email,passwordHash,isAdmin) VALUES ($1,$2,$3,$4)', ['Demo User', demoEmail, demoHash, 1]);
     }
-  }catch(e){ console.error('DB init error', e); }
+  }catch(e){
+    console.error('DB init error', e);
+    process.exit(1);
+  }
 })();
+
+pool.on('error', (err) => {
+  console.error('Postgres pool error', err);
+});
 
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
