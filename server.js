@@ -1004,6 +1004,22 @@ app.use('/api', (req, res, next) => {
   res.status(404).json({ ok: false, message: 'API endpoint not found' });
 });
 
+async function initDb() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log("¡Tablas creadas o verificadas exitosamente!");
+  } catch (err) {
+    console.error("Error al crear las tablas:", err);
+  }
+}
+initDb();
 function startServer(port){
   const server = app.listen(port)
     .on('listening', () => console.log(`Server listening on http://localhost:${port}`))
