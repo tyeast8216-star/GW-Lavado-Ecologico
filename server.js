@@ -44,6 +44,7 @@ const pool = new Pool({
 });
 
 const isProd = process.env.NODE_ENV === 'production';
+const showVerificationCode = (process.env.SHOW_VERIFICATION_CODE === '1') || !isProd;
 
 function sendSuccess(res, data = {}) {
   res.status(200).json(Object.assign({ ok: true }, data));
@@ -232,19 +233,23 @@ app.post('/api/send-verification', (req, res) => {
       transporter.verify((verErr, success) => {
         if (verErr) {
           console.error('SMTP verify error:', verErr && verErr.message ? verErr.message : verErr);
-          const respErr = { ok: false, sent: false, message: 'No se pudo conectar al servidor de correo' };
-          if (!isProd) respErr.detail = verErr && verErr.message ? String(verErr.message) : String(verErr);
-          return res.status(500).json(respErr);
+          const responseBody = { ok: true, sent: false, message: 'No se pudo conectar al servidor de correo' };
+          if (showVerificationCode) responseBody.code = code;
+          if (!isProd) responseBody.detail = verErr && verErr.message ? String(verErr.message) : String(verErr);
+          return res.json(responseBody);
         }
         transporter.sendMail(mailOptions, (mailErr, info) => {
           if (mailErr) {
             console.error('Mail send error', mailErr && mailErr.message ? mailErr.message : mailErr);
-            const resp = { ok: false, sent: false, message: 'No se pudo enviar el correo' };
-            if (!isProd) resp.detail = mailErr && mailErr.message ? String(mailErr.message) : String(mailErr);
-            return res.status(500).json(resp);
+            const responseBody = { ok: true, sent: false, message: 'No se pudo enviar el correo' };
+            if (showVerificationCode) responseBody.code = code;
+            if (!isProd) responseBody.detail = mailErr && mailErr.message ? String(mailErr.message) : String(mailErr);
+            return res.json(responseBody);
           }
           console.log('Verification email sent to', emailTrim, 'info:', info && info.response ? info.response : info);
-          return res.json({ ok: true, sent: true });
+          const responseBody = { ok: true, sent: true };
+          if (showVerificationCode) responseBody.code = code;
+          return res.json(responseBody);
         });
       });
     } else {
