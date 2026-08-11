@@ -182,7 +182,11 @@ app.post('/login', (req, res) => {
     const match = bcrypt.compareSync(password, storedHash);
     if (!match) return sendError(res, 'Usuario o contraseña incorrectos', 401);
     req.session.user = { id: row.id, name: row.name, email: row.email, isAdmin: !!row.isAdmin };
-    sendSuccess(res);
+    req.session.save((saveErr) => {
+      if (saveErr) return sendServerError(res, 'Error al guardar la sesión', saveErr);
+      console.log('Login success:', { email: row.email, sessionID: req.sessionID, user: req.session.user });
+      sendSuccess(res);
+    });
   });
 });
 
@@ -472,6 +476,7 @@ if(multer){
 
 // Return current session user info
 app.get('/api/me', (req, res) => {
+  console.log('/api/me session user=', req.session && req.session.user ? req.session.user : null, 'cookies=', req.headers.cookie);
   if (!req.session || !req.session.user) return res.json({ ok: false, user: null });
   const id = parseInt(req.session.user.id, 10);
   db.get('SELECT id, name, email, isAdmin, phone FROM users WHERE id = ?', [id], (err, row) => {
