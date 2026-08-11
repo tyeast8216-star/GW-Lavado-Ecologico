@@ -43,6 +43,23 @@ const pool = new Pool({
   ssl: enablePgSsl ? { rejectUnauthorized: false } : false
 });
 
+const isProd = process.env.NODE_ENV === 'production';
+
+function sendSuccess(res, data = {}) {
+  res.status(200).json(Object.assign({ ok: true }, data));
+}
+
+function sendError(res, message, status = 400, detail) {
+  const body = { ok: false, message };
+  if (detail && !isProd) body.detail = String(detail);
+  return res.status(status).json(body);
+}
+
+function sendServerError(res, message = 'Error interno del servidor', detail) {
+  if (detail) console.error(message, detail);
+  return sendError(res, message, 500, detail);
+}
+
 function toPg(sql) {
   let i = 0;
   return sql.replace(/\?/g, () => { i += 1; return '$' + i; });
@@ -149,39 +166,37 @@ pool.on('error', (err) => {
 
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.json({ ok: false, message: 'Faltan credenciales' });
+  if (!email || !password) return sendError(res, 'Faltan credenciales', 400);
   db.get('SELECT id,name,email,passwordHash,isAdmin FROM users WHERE email = ?', [email], (err, row) => {
-    if (err) return res.json({ ok: false, message: 'Error de base de datos' });
-    if (!row) return res.json({ ok: false, message: 'Usuario no encontrado' });
+    if (err) return sendServerError(res, 'Error al verificar las credenciales', err);
+    if (!row) return sendError(res, 'Usuario o contraseña incorrectos', 401);
     const match = bcrypt.compareSync(password, row.passwordHash);
-    if (!match) return res.json({ ok: false, message: 'Contraseña incorrecta' });
+    if (!match) return sendError(res, 'Usuario o contraseña incorrectos', 401);
     req.session.user = { id: row.id, name: row.name, email: row.email, isAdmin: !!row.isAdmin };
-    res.json({ ok: true });
+    sendSuccess(res);
   });
 });
 
 app.post('/register', (req, res) => {
   const { name, email, password, phone } = req.body;
   const verificationCode = req.body.verificationCode;
-  if (!email || !password) return res.json({ ok: false, message: 'Faltan datos' });
+  if (!email || !password) return sendError(res, 'Faltan datos', 400);
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) return res.json({ ok: false, message: 'Email inválido' });
-  if (password.length < 8) return res.json({ ok: false, message: 'La contraseña debe tener al menos 8 caracteres' });
+  if (!emailRegex.test(email)) return sendError(res, 'Email inválido', 400);
+  if (password.length < 8) return sendError(res, 'La contraseña debe tener al menos 8 caracteres', 400);
   db.get('SELECT id FROM users WHERE email = ?', [email], (err, row) => {
-    if (err) return res.json({ ok: false, message: 'Error de base de datos' });
-    if (row) return res.json({ ok: false, message: 'El usuario ya existe' });
-    // require verification code
-    if (!verificationCode) return res.json({ ok: false, message: 'Se requiere verificar el correo. Envía el código recibido.' });
+    if (err) return sendServerError(res, 'Error al comprobar el email', err);
+    if (row) return sendError(res, 'El correo ya está registrado', 409);
+    if (!verificationCode) return sendError(res, 'Se requiere verificar el correo antes de registrarse', 400);
     db.get('SELECT code,expires_at FROM email_verifications WHERE email = ? ORDER BY id DESC LIMIT 1', [email], (e2, vr) => {
-      if (e2) return res.json({ ok: false, message: 'Error de base de datos' });
+      if (e2) return sendServerError(res, 'Error al comprobar el código de verificación', e2);
       const now = Math.floor(Date.now()/1000);
-      if (!vr || vr.code !== String(verificationCode) || !vr.expires_at || vr.expires_at < now) return res.json({ ok: false, message: 'Código de verificación inválido o caducado' });
-      // proceed to create user
+      if (!vr || vr.code !== String(verificationCode) || !vr.expires_at || vr.expires_at < now) return sendError(res, 'Código de verificación inválido o caducado', 400);
       const passwordHash = bcrypt.hashSync(password, 10);
       db.run('INSERT INTO users (name,email,passwordHash,isAdmin,phone) VALUES (?,?,?,?,?)', [name, email, passwordHash, 0, phone || null], function(err) {
-        if (err) return res.json({ ok: false, message: 'Error al crear usuario' });
+        if (err) return sendServerError(res, 'Error al registrar el usuario', err);
         req.session.user = { id: this.lastID, name: name || '', email, isAdmin: false };
-        res.json({ ok: true });
+        sendSuccess(res);
       });
     });
   });
@@ -199,7 +214,7 @@ app.post('/api/send-verification', (req, res) => {
   db.run('INSERT INTO email_verifications (email, code, expires_at) VALUES (?,?,?)', [emailTrim, code, expiresAt], function(err){
     if (err) {
       console.error('DB insert verification error', err);
-      return res.status(500).json({ ok: false, message: 'Error al generar el código' });
+      return sendServerError(res, 'Error al generar el código de verificación', err);
     }
     // send email via nodemailer if configured
     const smtpHost = process.env.SMTP_HOST;
@@ -217,15 +232,15 @@ app.post('/api/send-verification', (req, res) => {
       transporter.verify((verErr, success) => {
         if (verErr) {
           console.error('SMTP verify error:', verErr && verErr.message ? verErr.message : verErr);
-          const respErr = { ok: false, sent: false, message: 'No se pudo conectar al servidor SMTP' };
-          if (process.env.NODE_ENV !== 'production') respErr.detail = verErr && verErr.message ? String(verErr.message) : String(verErr);
+          const respErr = { ok: false, sent: false, message: 'No se pudo conectar al servidor de correo' };
+          if (!isProd) respErr.detail = verErr && verErr.message ? String(verErr.message) : String(verErr);
           return res.status(500).json(respErr);
         }
         transporter.sendMail(mailOptions, (mailErr, info) => {
           if (mailErr) {
             console.error('Mail send error', mailErr && mailErr.message ? mailErr.message : mailErr);
-            const resp = { ok: false, sent: false, message: 'Error al enviar el correo' };
-            if (process.env.NODE_ENV !== 'production') resp.detail = mailErr && mailErr.message ? String(mailErr.message) : String(mailErr);
+            const resp = { ok: false, sent: false, message: 'No se pudo enviar el correo' };
+            if (!isProd) resp.detail = mailErr && mailErr.message ? String(mailErr.message) : String(mailErr);
             return res.status(500).json(resp);
           }
           console.log('Verification email sent to', emailTrim, 'info:', info && info.response ? info.response : info);
@@ -252,17 +267,16 @@ app.post('/api/request-password-reset', (req, res) => {
   if (!emailRegex.test(emailTrim)) return res.json({ ok: false, message: 'Email inválido' });
   // check if user exists; only send when a user with that email exists
   db.get('SELECT id FROM users WHERE email = ? LIMIT 1', [emailTrim], (err, row) => {
-    if (err) { console.error('DB error checking user for reset', err); return res.status(500).json({ ok: false, message: 'Error de base de datos' }); }
+    if (err) { console.error('DB error checking user for reset', err); return sendServerError(res, 'Error al comprobar el correo', err); }
     if (!row) {
-      // do not send email if no user found
-      console.log('Password reset requested for non-existent user (no email sent):', emailTrim);
-      return res.json({ ok: true, sent: false });
+      console.log('Password reset solicitado para email inexistente:', emailTrim);
+      return sendSuccess(res, { sent: false });
     }
     // user exists: generate code, store and send
     const code = String(Math.floor(100000 + Math.random()*900000));
     const expiresAt = Math.floor(Date.now()/1000) + (10*60);
     db.run('INSERT INTO email_verifications (email, code, expires_at) VALUES (?,?,?)', [emailTrim, code, expiresAt], function(err2){
-      if (err2) { console.error('DB insert verification error', err2); return res.status(500).json({ ok: false, message: 'Error al generar el código' }); }
+      if (err2) { console.error('DB insert verification error', err2); return sendServerError(res, 'Error al generar el código', err2); }
       // send email similar to send-verification
       const smtpHost = process.env.SMTP_HOST;
       if (smtpHost) {
@@ -301,14 +315,14 @@ app.post('/api/request-password-reset', (req, res) => {
 // Reset password using code sent to email
 app.post('/api/reset-password', (req, res) => {
   const { email, code, password, confirmPassword } = req.body || {};
-  if (!email || !code || !password) return res.json({ ok: false, message: 'Faltan datos' });
-  if (confirmPassword !== undefined && String(confirmPassword) !== String(password)) return res.json({ ok: false, message: 'Las contraseñas no coinciden' });
-  if (String(password).length < 8) return res.json({ ok: false, message: 'La contraseña debe tener al menos 8 caracteres' });
+  if (!email || !code || !password) return sendError(res, 'Faltan datos', 400);
+  if (confirmPassword !== undefined && String(confirmPassword) !== String(password)) return sendError(res, 'Las contraseñas no coinciden', 400);
+  if (String(password).length < 8) return sendError(res, 'La contraseña debe tener al menos 8 caracteres', 400);
   // complexity: at least one lowercase, one uppercase, one digit and one symbol
   try{
     const pwd = String(password);
     const complexity = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}/;
-    if(!complexity.test(pwd)) return res.json({ ok: false, message: 'La contraseña debe incluir mayúscula, minúscula, número y símbolo' });
+    if(!complexity.test(pwd)) return sendError(res, 'La contraseña debe incluir mayúscula, minúscula, número y símbolo', 400);
   }catch(e){ /* ignore regex errors */ }
   const emailTrim = String(email).trim();
   db.get('SELECT code,expires_at FROM email_verifications WHERE email = ? ORDER BY id DESC LIMIT 1', [emailTrim], (err, row) => {
@@ -326,12 +340,12 @@ app.post('/api/reset-password', (req, res) => {
 // Verify code endpoint (optional, server also checks code during /register)
 app.post('/api/verify-code', (req, res) => {
   const { email, code } = req.body || {};
-  if (!email || !code) return res.json({ ok: false, message: 'Faltan datos' });
+  if (!email || !code) return sendError(res, 'Faltan datos', 400);
   const emailTrim = String(email).trim();
   db.get('SELECT code,expires_at FROM email_verifications WHERE email = ? ORDER BY id DESC LIMIT 1', [emailTrim], (err, row) => {
     if (err) return res.status(500).json({ ok: false, message: 'Error de base de datos' });
     const now = Math.floor(Date.now()/1000);
-    if (!row || row.code !== String(code) || !row.expires_at || row.expires_at < now) return res.json({ ok: false, valid: false, message: 'Código inválido o caducado' });
+    if (!row || row.code !== String(code) || !row.expires_at || row.expires_at < now) return sendError(res, 'Código inválido o caducado', 400);
     res.json({ ok: true, valid: true });
   });
 });

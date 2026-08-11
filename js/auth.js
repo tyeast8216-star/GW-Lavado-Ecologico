@@ -458,14 +458,67 @@ function attachLoginFormHandler() {
   form.dataset.loginBound = '1';
 }
 
+function attachRegisterFormHandler() {
+  const form = document.querySelector('.register-form');
+  if (!form || form.dataset.registerBound) return;
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const name = (document.getElementById('name') || {}).value || '';
+    const email = (document.getElementById('email') || {}).value || '';
+    const phone = (document.getElementById('phone') || {}).value || '';
+    const password = (document.getElementById('password') || {}).value || '';
+    const password2 = (document.getElementById('password2') || {}).value || '';
+    const verificationCode = (document.getElementById('email-code') || {}).value || '';
+
+    if (!name || !email || !password || !password2) {
+      try { showToast('Por favor completa todos los campos', 'danger'); } catch (e) { }
+      return;
+    }
+    if (password !== password2) {
+      try { showToast('Las contraseñas no coinciden', 'danger'); } catch (e) { }
+      return;
+    }
+    if (!verificationCode) {
+      try {
+        const resp = await postToApi('/api/send-verification', { email });
+        if (resp && resp.ok) {
+          const area = document.getElementById('email-verification-area');
+          if (area) area.style.display = 'block';
+          try { showToast('Código enviado al correo. Ingresa el código y vuelve a enviar.', 'success'); } catch (e) { }
+          return;
+        }
+        try { showToast(resp && resp.message ? resp.message : 'No se pudo enviar el código de verificación', 'danger'); } catch (e) { }
+      } catch (err) {
+        console.error('send verification error', err);
+        try { showToast('Error de conexión con el servidor', 'danger'); } catch (e) { }
+      }
+      return;
+    }
+
+    try {
+      const resp = await postToApi('/register', { name, email, password, phone, verificationCode });
+      if (resp && resp.ok) {
+        try { showToast('Cuenta creada correctamente', 'success'); } catch (e) { }
+        setTimeout(() => window.location.href = '/', 1200);
+        return;
+      }
+      try { showToast(resp && resp.message ? resp.message : 'No se pudo crear la cuenta', 'danger'); } catch (e) { }
+    } catch (err) {
+      console.error('register submit error', err);
+      try { showToast('Error de conexión con el servidor', 'danger'); } catch (e) { }
+    }
+  });
+  form.dataset.registerBound = '1';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   ensureLoginModalMarkup();
   ensureResetModalMarkup();
   attachLoginLinkInterception();
   bindForgotPasswordHandlers();
   attachResetPasswordFlow();
-  // ensure the injected login modal form has a submit handler
   attachLoginFormHandler();
+  attachRegisterFormHandler();
 });
 
 window.openLoginModal = openLoginModal;
