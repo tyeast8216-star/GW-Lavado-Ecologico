@@ -35,7 +35,8 @@ async function loadAuthLink() {
       console.log('auth check: no user in session', data);
       return;
     }
-    const isAdmin = !!data.user.isAdmin;
+    data.user.isAdmin = !!(data.user.isAdmin || data.user.isadmin || data.user.is_admin);
+    const isAdmin = data.user.isAdmin;
     console.log('auth check /api/me ->', data, 'usedBase=', usedBase, 'document.cookie=', document.cookie.slice(0, 200));
     if (isAdmin) console.log('auth check: admin user detected', data.user);
     const insertAdminLink = () => {

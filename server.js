@@ -175,13 +175,14 @@ app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const emailTrim = String(email || '').trim().toLowerCase();
   if (!emailTrim || !password) return sendError(res, 'Faltan credenciales', 400);
-  db.get('SELECT id,name,email,passwordHash AS "passwordHash",isAdmin FROM users WHERE email = ?', [emailTrim], (err, row) => {
+  db.get('SELECT id,name,email,passwordHash AS "passwordHash","isAdmin" AS "isAdmin" FROM users WHERE email = ?', [emailTrim], (err, row) => {
     if (err) return sendServerError(res, 'Error al verificar las credenciales', err);
     if (!row) return sendError(res, 'Usuario o contraseña incorrectos', 401);
     const storedHash = row.passwordHash || row.passwordhash || row.password_hash;
+    const isAdminValue = !!(row.isAdmin || row.isadmin || row.is_admin);
     const match = bcrypt.compareSync(password, storedHash);
     if (!match) return sendError(res, 'Usuario o contraseña incorrectos', 401);
-    req.session.user = { id: row.id, name: row.name, email: row.email, isAdmin: !!row.isAdmin };
+    req.session.user = { id: row.id, name: row.name, email: row.email, isAdmin: isAdminValue };
     req.session.save((saveErr) => {
       if (saveErr) return sendServerError(res, 'Error al guardar la sesión', saveErr);
       console.log('Login success:', { email: row.email, sessionID: req.sessionID, user: req.session.user });
@@ -479,10 +480,12 @@ app.get('/api/me', (req, res) => {
   console.log('/api/me session user=', req.session && req.session.user ? req.session.user : null, 'cookies=', req.headers.cookie);
   if (!req.session || !req.session.user) return res.json({ ok: false, user: null });
   const id = parseInt(req.session.user.id, 10);
-  db.get('SELECT id, name, email, isAdmin, phone FROM users WHERE id = ?', [id], (err, row) => {
+  db.get('SELECT id, name, email, "isAdmin" AS "isAdmin", phone FROM users WHERE id = ?', [id], (err, row) => {
     if (err) return res.status(500).json({ ok: false, message: 'Error de base de datos' });
     if (!row) return res.json({ ok: false, user: null });
-    row.isAdmin = !!row.isAdmin;
+    const isAdminValue = !!(row.isAdmin || row.isadmin || row.is_admin);
+    row.isAdmin = isAdminValue;
+    row.isadmin = isAdminValue;
     res.json({ ok: true, user: row });
   });
 });
