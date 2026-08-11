@@ -40,29 +40,28 @@ async function loadAuthLink() {
     const insertAdminLink = () => {
       // do not insert if admin anchor or admin li already exists
       if (document.getElementById('admin-nav-link') || document.getElementById('admin-nav-anchor')) return false;
-      const navs = document.querySelectorAll('.navbar-nav');
-      if (!navs || navs.length === 0) return false;
+      const navContainers = document.querySelectorAll('.navbar-nav, .collapse.navbar-collapse, .custom_nav-container');
+      if (!navContainers || navContainers.length === 0) return false;
       let inserted = false;
-      navs.forEach(nav => {
+      navContainers.forEach(container => {
         try {
-          if (nav && !nav.querySelector('#admin-nav-link')) {
-            const li = document.createElement('li');
-            li.id = 'admin-nav-link';
-            li.className = 'nav-item icon-nav-item';
-            li.innerHTML = '<a class="nav-link no-dot" href="/dashboard.html" title="Panel administración" style="color:#000 !important; display: inline-flex; align-items: center; padding: 6px 4px !important; margin: 0 !important;">'
+          if (!container || container.querySelector('#admin-nav-link')) return;
+          const li = document.createElement('li');
+          li.id = 'admin-nav-link';
+          li.className = 'nav-item icon-nav-item';
+          li.innerHTML = '<a class="nav-link no-dot" href="/dashboard.html" title="Panel administración" style="color:#000 !important; display: inline-flex; align-items: center; padding: 6px 4px !important; margin: 0 !important;">'
   + '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="20" height="20" style="fill: #000 !important; stroke: #000 !important; color: #000 !important;" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
   + '<path d="M320 64C324.6 64 329.2 65 333.4 66.9L521.8 146.8C543.8 156.1 560.2 177.8 560.1 204C559.6 303.2 518.8 484.7 346.5 567.2C329.8 575.2 310.4 575.2 293.7 567.2C121.3 484.7 80.6 303.2 80.1 204C80 177.8 96.4 156.1 118.4 146.8L306.7 66.9C310.9 65 315.4 64 320 64zM320 130.8L320 508.9C458 442.1 495.1 294.1 496 205.5L320 130.9L320 130.9z"/>'
   + '</svg>'
   + '</a>';
-            const accountLink = nav.querySelector('#account-nav-link');
-            if (accountLink && accountLink.parentElement) {
-              accountLink.parentElement.insertBefore(li, accountLink);
-            } else {
-              nav.appendChild(li);
-            }
-            inserted = true;
-            console.log('auth: admin link injected into navbar');
+          const accountLink = container.querySelector('#account-nav-link');
+          if (accountLink && accountLink.parentElement) {
+            accountLink.parentElement.insertBefore(li, accountLink);
+          } else {
+            container.appendChild(li);
           }
+          inserted = true;
+          console.log('auth: admin link injected into navbar');
         } catch (err) { console.warn('auth: error injecting admin link', err); }
       });
       return inserted;
