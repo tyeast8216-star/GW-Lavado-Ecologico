@@ -378,9 +378,13 @@ app.post('/api/verify-code', (req, res) => {
 app.get('/api/users', (req, res) => {
   if (!req.session || !req.session.user) return res.status(401).json({ ok: false, message: 'No autorizado' });
   if (!req.session.user.isAdmin) return res.status(403).json({ ok: false, message: 'Requiere permisos de administrador' });
-  db.all('SELECT id, name, email, isAdmin, phone FROM users ORDER BY id', [], (err, rows) => {
+  db.all('SELECT id, name, email, isadmin AS "isAdmin", phone FROM users ORDER BY id', [], (err, rows) => {
     if (err) return res.status(500).json({ ok: false, message: 'Error de base de datos' });
-    res.json({ ok: true, users: rows });
+    const normalizedRows = (rows || []).map(row => ({
+      ...row,
+      isAdmin: !!(row.isAdmin || row.isadmin || row.is_admin)
+    }));
+    res.json({ ok: true, users: normalizedRows });
   });
 });
 
