@@ -3658,13 +3658,16 @@ body.scrolled {
   .eco-categories__grid {
     grid-template-columns: 1fr;
   }
+
   .eco-card {
     height: 160px;
   }
+
   .eco-card__overlay h3 {
     font-size: 18px;
   }
 }
+
 /* --- FIN DE LA SECCIÓN DE CATEGORÍAS --- */
 
 /* Ajustes rápidos para la sección de videos: limitar ancho y mantener proporción */
@@ -4046,11 +4049,93 @@ body.scrolled {
     height: 4px;
     background-color: #23c823;
   }
+}
 
-  .testimonios .linea-divisoria {
-    width: 350px !important;
-    height: 4px;
-    background-color: #23c823;
+.testimonials-section {
+  padding: 50px 20px;
+  max-width: 1300px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.section-title {
+  font-size: 32px;
+  color: #111;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+
+.title-underline {
+  width: 530px;
+  height: 4px;
+  background-color: #4caf50;
+  margin: 0 auto 50px auto;
+}
+
+.cards-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.card {
+  background-color: #1e5631;
+  color: #ffffff;
+  padding: 40px 30px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.quote-icon {
+  color: #aed581;
+  font-size: 24px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.avatar-container {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #ffffff;
+}
+
+.card-text {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.card-author {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.card-author strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+
+@media (max-width: 900px) {
+  .cards-container {
+    grid-template-columns: 1fr;
+  }
+
+  .title-underline {
+    width: 100%;
+    max-width: 400px;
   }
 }
+
 /*# sourceMappingURL=style.css.map */
