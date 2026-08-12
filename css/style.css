@@ -3815,5 +3815,242 @@ body.scrolled {
   }
 }
 
+/* SECCION BANNER1 */
+/* Contenedor principal del banner */
+.cta-banner {
+  position: relative;
+  width: 100%;
+  margin-top: 20px;
+  min-height: 400px;
+  /* Altura regulable según prefieras */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
+  /* Imagen de fondo */
+  background-image: url('../images/separador.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  text-align: center;
+  padding: 40px 20px;
+  font-family: 'Arial', sans-serif;
+  overflow: hidden;
+}
+
+/* Capa verde translúcida para dar el tono exacto y mejorar el contraste del texto */
+.cta-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Degradado verde con opacidad (puedes ajustar el nivel de transparencia cambiando el 0.85) */
+  background: linear-gradient(135deg, rgba(57, 181, 74, 0.88), rgba(0, 148, 68, 0.10));
+  z-index: 1;
+}
+
+/* Contenedor del texto (apilado por encima de la capa verde) */
+.cta-content {
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
+  color: #ffffff;
+}
+
+/* Título principal */
+.cta-title {
+  font-size: 36px;
+  font-weight: 400;
+  /* Estilo ligero/regular como el de la imagen */
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+
+/* Subtítulo */
+.cta-subtitle {
+  font-size: 18px;
+  font-weight: 300;
+  margin-bottom: 30px;
+  opacity: 0.9;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 400px;
+  padding-left: 30px;
+}
+
+/* Botón "Más información" */
+.cta-button {
+  display: inline-block;
+  background-color: #ffffff;
+  color: #39b54a;
+  /* Verde corporativo para el texto del botón */
+  font-size: 22px;
+  font-weight: bold;
+  text-decoration: none;
+  padding: 12px 45px;
+  border-radius: 2px;
+  /* Esquinas apenas redondeadas */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Efecto al pasar el cursor por encima del botón */
+.cta-button:hover {
+  background-color: #f4f4f4;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Adaptación para pantallas móviles */
+@media (max-width: 768px) {
+  .cta-banner {
+    min-height: 300px;
+  }
+
+  .cta-title {
+    font-size: 26px;
+  }
+
+  .cta-subtitle {
+    font-size: 16px;
+  }
+
+  .cta-button {
+    font-size: 18px;
+    padding: 10px 35px;
+  }
+}
+
+
+/* Process section */
+.process-section {
+  margin-top: 0px;
+  position: relative;
+  width: 100%;
+  padding: 20px 20px;
+  background-color: #ffffff;
+  /* Color verde oscuro base */
+
+  /* Agregamos la misma imagen texturizada de fondo de forma sutil */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  font-family: 'Arial', sans-serif;
+  overflow: hidden;
+}
+
+/* Capa oscura superpuesta para dar el tono verde profundo corporativo */
+.process-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Tono verde bosque oscuro con opacidad alta */
+  background: rgba(255, 255, 255, 0.92);
+  z-index: 1;
+}
+
+/* Contenedor interno alineado */
+.process-content {
+  position: relative;
+  z-index: 2;
+  /* Por encima de la capa verde */
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+  color: #000000;
+}
+
+/* Títulos de secciones */
+.process-section .process-title,
+.testimonios .process-title {
+  font-size: 32px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #000;
+  margin: 0 0 20px 0;
+  line-height: 1.2;
+  font-family: 'Arial', sans-serif;
+  display: block;
+}
+
+.testimonios .linea-divisoria {
+  width: 900px !important;
+  height: 4px;
+  background-color: #23c823;
+}
+
+.process-content .linea-divisoria {
+  width: 720px;
+  height: 4px;
+  background-color: #23c823;
+  margin: 0px auto 40px auto;
+
+}
+
+/* Subtítulo */
+.process-subtitle {
+  font-size: 18px;
+  font-weight: 300;
+  margin-bottom: 40px;
+  opacity: 0.9;
+}
+
+/* Contenedor del reproductor de video */
+.process-video-container {
+  width: 100%;
+  max-width: 700px;
+  /* Controla el ancho máximo del video en pantallas grandes */
+  margin: 0 auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  /* Sombra pronunciada para destacar el video */
+  border-radius: 4px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  /* Mantiene la proporción del reproductor */
+}
+
+/* Estilos para el elemento de video o iframe */
+.process-video-container video,
+.process-video-container iframe {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Ajustes para pantallas móviles */
+@media (max-width: 768px) {
+  .process-section {
+    padding: 50px 15px;
+  }
+
+  .process-title {
+    font-size: 24px;
+  }
+
+  .process-subtitle {
+    font-size: 15px;
+    margin-bottom: 25px;
+  }
+
+  .process-content .linea-divisoria {
+    width: 300px;
+    height: 4px;
+    background-color: #23c823;
+  }
+
+  .testimonios .linea-divisoria {
+    width: 350px !important;
+    height: 4px;
+    background-color: #23c823;
+  }
+}
 /*# sourceMappingURL=style.css.map */
