@@ -4138,4 +4138,65 @@ body.scrolled {
   }
 }
 
+
+/* --- Pie de Página (Footer) --- */
+.site-footer {
+  background-color: #3eb843;
+  padding: 30px 20px;
+  border-top: 1px solid #3eb843;
+  /* Línea sutil de separación superior */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.site-footer-container {
+  max-width: 1200px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* Estilo del texto del copyright */
+.site-footer-copyright p {
+  color: #ffffff;
+  font-size: 0.85rem;
+}
+
+/* Estilo de la lista de enlaces */
+.site-footer-links {
+  display: flex;
+  gap: 25px;
+  flex-wrap: wrap;
+}
+
+.site-footer-links a {
+  color: #fcfcfc;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.3s ease;
+}
+
+.site-footer-links a:hover {
+  color: #ffffff;
+  /* Al pasar el mouse se ilumina en blanco */
+}
+
+/* --- Ajuste Responsivo para Móviles --- */
+@media (max-width: 768px) {
+  .site-footer-container {
+    flex-direction: column-reverse;
+    /* En móvil el copyright baja y los enlaces suben */
+    text-align: center;
+    gap: 15px;
+  }
+
+  .site-footer-links {
+    justify-content: center;
+    gap: 15px;
+  }
+}
 /*# sourceMappingURL=style.css.map */
