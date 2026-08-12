@@ -2442,6 +2442,9 @@ a:focus {
   background: #fff;
 }
 
+.detail-box p{
+  text-align:justify;
+}
 .problem_section .img-box {
   width: 100%;
   margin: 0;
@@ -4115,6 +4118,7 @@ body.scrolled {
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 30px;
+  text-align:justify;
 }
 
 .card-author {
@@ -4138,7 +4142,6 @@ body.scrolled {
     max-width: 400px;
   }
 }
-
 
 /* --- Pie de Página (Footer) --- */
 .site-footer {
@@ -4199,5 +4202,9 @@ body.scrolled {
     justify-content: center;
     gap: 15px;
   }
+}
+
+.content-container p{
+  text-align:justify;
 }
 /*# sourceMappingURL=style.css.map */
