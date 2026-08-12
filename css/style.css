@@ -3666,4 +3666,154 @@ body.scrolled {
   }
 }
 /* --- FIN DE LA SECCIÓN DE CATEGORÍAS --- */
+
+/* Ajustes rápidos para la sección de videos: limitar ancho y mantener proporción */
+/* Contenedor principal de la sección */
+.videos-section {
+  padding: 60px 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+  font-family: 'Arial', sans-serif;
+}
+
+/* Contenedor Flex para alinear las dos columnas */
+.videos-container {
+  display: flex;
+  gap: 40px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+/* Cada columna (Título + Video) */
+.video-card {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Estilos de los Títulos */
+.video-title {
+  color: #000000;
+  font-size: clamp(18px, 2.2vw, 24px);
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+  position: relative;
+  padding-bottom: 10px;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+/* Línea decorativa debajo del título */
+.video-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 307px;
+  height: 3px;
+  background-color: rgb(30, 206, 45);
+  ;
+}
+
+/* Estilos de los Títulos */
+.video-title2 {
+  color: #000000;
+  font-size: clamp(18px, 2.2vw, 24px);
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+  position: relative;
+  padding-bottom: 10px;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+/* Línea decorativa debajo del título */
+.video-title2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 255px;
+  height: 3px;
+  background-color: rgb(30, 206, 45);
+  ;
+}
+
+/* Contenedor del video para control de proporciones y bordes */
+.video-wrapper {
+  width: 100%;
+  max-width: 640px;
+  margin-top: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+
+/* El elemento de video en sí */
+.video-wrapper video,
+.video-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Ajustes Responsivos para tablets y móviles */
+@media (max-width: 991px) {
+  .videos-section {
+    padding: 40px 16px;
+  }
+
+  .videos-container {
+    gap: 28px;
+  }
+
+  .video-card {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .videos-section {
+    padding: 32px 12px;
+  }
+
+  .videos-container {
+    gap: 24px;
+  }
+
+  .video-title {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .video-title::after {
+    width: 80px;
+    height: 2px;
+  }
+
+  .video-wrapper {
+    margin-top: 12px;
+    border-radius: 6px;
+  }
+
+  /* Línea decorativa debajo del título */
+  .video-title2::after {
+    width: 190px;
+  }
+
+  /* Línea decorativa debajo del título */
+  .video-title::after {
+    width: 230px;
+  }
+}
+
+
 /*# sourceMappingURL=style.css.map */
