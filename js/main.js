@@ -34,19 +34,32 @@ document.addEventListener('DOMContentLoaded', function () {
         backdrop.addEventListener('click', closeDrawer);
     }
 
+    function setDrawerState(isOpen) {
+        const drawer = document.getElementById('side-drawer');
+        const backdrop = document.getElementById('drawer-backdrop');
+
+        if (drawer) drawer.classList.toggle('open', isOpen);
+        if (backdrop) backdrop.classList.toggle('open', isOpen);
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+
+        document.querySelectorAll('.navbar-toggler').forEach(btn => {
+            btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+    }
+
     function openDrawer() {
         createDrawer();
         const drawer = document.getElementById('side-drawer');
         const backdrop = document.getElementById('drawer-backdrop');
+        if (!drawer || !backdrop) return;
+
         // clone navbar links
         const source = document.querySelector('.custom_nav-container .navbar-nav');
         const target = document.getElementById('drawer-nav');
         if (source && target) {
             target.innerHTML = '';
             const clone = source.cloneNode(true);
-            // remove active classes on clone and adjust links
             clone.querySelectorAll('.nav-item').forEach(li => { li.classList.remove('active'); });
-            // move each link into target
             Array.from(clone.children).forEach(child => {
                 const link = child.querySelector('.nav-link');
                 if (link) {
@@ -55,26 +68,26 @@ document.addEventListener('DOMContentLoaded', function () {
                     target.appendChild(a);
                 }
             });
-<<<<<<< HEAD
-=======
-            // (language selector removed) -- no cloning required
->>>>>>> db60f3f4af73acec62edb26ae48248e29a92c80e
         }
-        drawer.classList.add('open'); backdrop.classList.add('open'); document.body.style.overflow = 'hidden';
+
+        setDrawerState(true);
     }
 
     function closeDrawer() {
-        const drawer = document.getElementById('side-drawer');
-        const backdrop = document.getElementById('drawer-backdrop');
-        if (drawer) drawer.classList.remove('open'); if (backdrop) backdrop.classList.remove('open');
-        document.body.style.overflow = '';
+        setDrawerState(false);
     }
 
     // attach toggler to open drawer on small screens
     document.querySelectorAll('.navbar-toggler').forEach(btn => {
         btn.addEventListener('click', function (e) {
             if (window.innerWidth < 992) {
-                e.preventDefault(); e.stopPropagation(); openDrawer();
+                e.preventDefault(); e.stopPropagation();
+                const isOpen = document.getElementById('side-drawer')?.classList.contains('open');
+                if (isOpen) {
+                    closeDrawer();
+                } else {
+                    openDrawer();
+                }
             }
             // otherwise allow normal bootstrap collapse behavior
         });
