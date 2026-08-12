@@ -3563,11 +3563,12 @@ body.scrolled {
 
 /* --- CONTENEDOR GENERAL Y ENCABEZADO --- */
 .eco-categories {
-  max-width: 1200px;
-  margin: 50px auto;
-  padding: 0 20px;
+  margin-top: 60px;
+  background-color: #f9f9f9;
+  padding: 20px 20px;
   font-family: 'Arial', sans-serif;
   text-align: center;
+    padding-bottom: 60px;
 }
 
 .eco-categories__header h2 {
