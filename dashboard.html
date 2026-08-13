@@ -10,6 +10,11 @@
 </head>
 <body class="dashboard-page">
   <header class="topbar">
+    <button class="mobile-menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
     <div class="brand">
       <a href="index.html"><img src="images/logogwlavadoeco.png" alt="logo"></a>
       <div>
@@ -18,10 +23,11 @@
       </div>
     </div>
     <div class="user-actions topbar-actions">
-      <div id="user-name" style="font-weight:600;color:#333"></div>
       <a id="logout-link" class="logout-btn" href="/logout">Cerrar sesión</a>
     </div>
   </header>
+
+  <div class="mobile-menu-backdrop" id="mobile-menu-backdrop" aria-hidden="true"></div>
 
   <div class="layout">
     <aside class="sidebar">
@@ -38,6 +44,7 @@
       <section class="welcome">
         <div>
           <h2 id="welcome-title">Bienvenido,</h2>
+          <div id="user-email" style="margin-top:6px;color:var(--muted);font-size:0.92rem;line-height:1.4"></div>
           <p id="welcome-sub" style="color:var(--muted);margin:6px 0 0">Resumen general de la tienda</p>
         </div>
         <div style="text-align:right">
@@ -137,5 +144,49 @@
   <script src="js/toast.js"></script>
   <script src="js/phone-select.js"></script>
   <script src="js/dashboard.js"></script>
+  <script>
+    (function () {
+      const toggleButton = document.querySelector('.mobile-menu-toggle');
+      const sidebar = document.querySelector('.sidebar');
+      const backdrop = document.getElementById('mobile-menu-backdrop');
+
+      if (toggleButton && sidebar) {
+        const closeMenu = () => {
+          sidebar.classList.remove('open');
+          document.body.classList.remove('menu-open');
+          toggleButton.setAttribute('aria-expanded', 'false');
+          toggleButton.classList.remove('active');
+        };
+
+        const openMenu = () => {
+          sidebar.classList.add('open');
+          document.body.classList.add('menu-open');
+          toggleButton.setAttribute('aria-expanded', 'true');
+          toggleButton.classList.add('active');
+        };
+
+        toggleButton.addEventListener('click', () => {
+          const isOpen = sidebar.classList.contains('open');
+          if (isOpen) {
+            closeMenu();
+          } else {
+            openMenu();
+          }
+        });
+
+        if (backdrop) {
+          backdrop.addEventListener('click', closeMenu);
+        }
+
+        sidebar.querySelectorAll('a').forEach(link => {
+          link.addEventListener('click', () => {
+            if (window.innerWidth <= 767.98) {
+              closeMenu();
+            }
+          });
+        });
+      }
+    })();
+  </script>
 </body>
 </html>

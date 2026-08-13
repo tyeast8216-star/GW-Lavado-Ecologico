@@ -46,17 +46,19 @@ function escapeHtml(str){ if(!str) return ''; return String(str).replace(/[&<>"'
 async function initDashboard(){
   const me = await fetchJson('/api/me');
   const welcomeTitle = document.getElementById('welcome-title');
-  const nameEl = document.getElementById('user-name');
+  const userEmailEl = document.getElementById('user-email');
   const lastSessionEl = document.getElementById('last-session');
   const usersMsg = document.getElementById('users-msg');
   if(!me || !me.ok || !me.user){
     welcomeTitle.textContent = 'Bienvenido,';
-    nameEl.textContent = '';
+    if(userEmailEl) userEmailEl.textContent = '';
     usersMsg.textContent = 'Debes iniciar sesión como administrador para ver usuarios.';
     return;
   }
-  nameEl.textContent = me.user.email || me.user.id || 'Admin';
-  welcomeTitle.textContent = 'Bienvenido, ' + (me.user.name || me.user.email || 'Administrador');
+  const displayName = me.user.name || me.user.email || 'Administrador';
+  const email = me.user.email || '';
+  welcomeTitle.textContent = 'Bienvenido, ' + displayName;
+  if(userEmailEl) userEmailEl.textContent = email;
   lastSessionEl.textContent = new Date().toLocaleString();
 
   // load users and stats
