@@ -964,6 +964,24 @@ iframe {
   background: linear-gradient(90deg, #f97316, #f43f5e);
 }
 
+.toast.danger {
+  background: linear-gradient(90deg, #b00020, #dc2626);
+}
+
+.login-feedback {
+  display: none;
+  margin-top: 12px;
+  color: #b00020;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 600;
+  text-align: center;
+}
+
+.login-feedback:not(:empty) {
+  display: block;
+}
+
 /* small animations */
 .cart-count.bump {
   animation: cart-bump 360ms ease;

@@ -270,6 +270,7 @@ function ensureLoginModalMarkup() {
                 <a href="#" class="forgot-pass-link" id="loginModalForgotPass">Forgot Password?</a>
               </div>
               <button type="submit" class="btn-login">ACCEDER</button>
+              <div class="login-feedback" role="alert" aria-live="polite"></div>
               <p class="signup register-cta"><a href="register.html">Register Now!</a></p>
             </form>
           </div>
@@ -496,29 +497,58 @@ function attachResetPasswordFlow() {
   }
 }
 
+function setLoginFeedback(form, message, kind = 'danger') {
+  if (!form) return;
+  const feedback = form.querySelector('.login-feedback');
+  if (feedback) {
+    feedback.textContent = message || '';
+    feedback.style.display = message ? 'block' : 'none';
+    feedback.style.color = kind === 'success' ? '#15803d' : '#b00020';
+    feedback.style.marginTop = '10px';
+    feedback.style.fontSize = '14px';
+    feedback.style.fontWeight = '600';
+    feedback.style.textAlign = 'center';
+  }
+  try {
+    showToast(message || 'Error', kind);
+  } catch (e) {
+    // ignore if toast system is unavailable
+  }
+}
+
 function attachLoginFormHandler() {
   const forms = Array.from(document.querySelectorAll('.login-form'));
   forms.forEach(form => {
     if (!form || form.dataset.loginBound) return;
+    form.addEventListener('input', () => {
+      const feedback = form.querySelector('.login-feedback');
+      if (feedback) {
+        feedback.textContent = '';
+        feedback.style.display = 'none';
+      }
+    });
+
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
       const email = (form.querySelector('input[name="email"]') || {}).value || '';
       const password = (form.querySelector('input[name="password"]') || {}).value || '';
       if (!email || !password) {
-        try { showToast('Por favor ingresa correo y contraseña', 'danger'); } catch (e) { }
+        setLoginFeedback(form, 'Por favor ingresa correo y contraseña', 'danger');
         return;
       }
       try {
         const resp = await postToApi('/login', { email, password });
         if (resp && resp.ok) {
+          setLoginFeedback(form, 'Inicio de sesión correcto', 'success');
           try { if (window.jQuery) { window.jQuery('#loginModal').modal('hide'); $('.modal-backdrop').remove(); document.body.classList.remove('modal-open'); } } catch (e) { }
           window.location.href = '/';
           return;
         }
-        try { showToast(resp && resp.message ? resp.message : 'Credenciales incorrectas', 'danger'); } catch (e) { }
+        const msg = (resp && resp.message) ? resp.message : 'Credenciales incorrectas';
+        setLoginFeedback(form, msg, 'danger');
       } catch (err) {
         console.error('login submit error', err);
-        try { showToast('Error de conexión con el servidor', 'danger'); } catch (e) { }
+        setLoginFeedback(form, 'Error de conexión con el servidor', 'danger');
       }
     });
     form.dataset.loginBound = '1';
