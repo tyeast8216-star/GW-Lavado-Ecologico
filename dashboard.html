@@ -6,39 +6,9 @@
   <title>Dashboard - GW Lavado Ecologico</title>
   <link rel="icon" type="image/x-icon" href="/images/logogwlavadoeco.png">
   <link rel="stylesheet" href="css/bootstrap.css" />
-  <link href="css/style.css" rel="stylesheet" />
-  <style>
-    :root{ --accent:#007bff; --bg:#f6f8fb; --card:#ffffff; --muted:#6c757d }
-    body{ background:var(--bg); font-family: 'Poppins', sans-serif; }
-    .topbar{ background:#fff; border-bottom:1px solid #ececec; padding:10px 20px; display:flex; align-items:center; justify-content:space-between }
-    .brand{ display:flex; align-items:center; gap:12px }
-    .brand img{ width:48px; height:48px }
-    .user-actions{ display:flex; flex-direction:column; align-items:flex-end; gap:8px }
-    .topbar-actions{ display:flex; flex-direction:column; align-items:flex-end; gap:8px }
-    .logout-btn{ background:transparent; border:1px solid var(--accent); color:var(--accent); padding:6px 10px; border-radius:6px; cursor:pointer }
-    .layout{ display:grid; grid-template-columns: 240px 1fr; gap:20px; padding:20px; max-width:1200px; margin:20px auto }
-    .sidebar{ background:var(--card); border-radius:8px; padding:12px; height:calc(100vh - 140px); box-shadow:0 1px 4px rgba(0,0,0,0.05) }
-    .nav-link-custom{ display:flex; align-items:center; gap:10px; padding:10px 12px; color:#333; border-radius:6px; text-decoration:none }
-    .nav-link-custom:hover{ background:#f1f5f9 }
-    .main{ min-height:400px }
-    .welcome{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px }
-    .stats{ display:flex; gap:12px; flex-wrap:wrap }
-    .stat{ background:var(--card); padding:14px; border-radius:8px; flex:1; min-width:160px; box-shadow:0 1px 3px rgba(0,0,0,0.04) }
-    .stat h3{ margin:0; color:var(--accent) }
-    /* users table */
-    .users-card{ margin-top:18px; background:var(--card); padding:12px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.03) }
-    .users-card table{ width:100%; border-collapse:collapse }
-    .users-card th, .users-card td{ padding:8px 10px; border-bottom:1px solid #f0f0f0 }
-    .users-card th{ text-align:left; color:var(--muted) }
-    /* responsive */
-    @media(max-width:900px){ .layout{ grid-template-columns: 1fr; } .sidebar{ height:auto; order:2 } .main{ order:1 } }
-    /* Fix: hide stray bullets or pseudo-elements that may render as a black dot in navbar */
-    .topbar, .sidebar, .brand, .nav-link-custom { list-style: none; }
-    .brand::before, .brand::after, .nav-link-custom::before, .nav-link-custom::after, .topbar::before, .topbar::after { display: none !important; content: none !important; }
-    .sidebar nav { padding: 0; margin: 0; }
-  </style>
+  <link href="css/styles.css" rel="stylesheet" />
 </head>
-<body>
+<body class="dashboard-page">
   <header class="topbar">
     <div class="brand">
       <a href="index.html"><img src="images/logogwlavadoeco.png" alt="logo"></a>

@@ -12,7 +12,6 @@ async function loadAuthLink() {
     const candidateBases = [];
     if (baseOrigin) candidateBases.push(baseOrigin);
     if (explicitBase && candidateBases.indexOf(explicitBase) === -1) candidateBases.push(explicitBase);
-    // try a range of localhost ports (useful if server auto-incremented)
     for (let p = 3000; p <= 3010; p++) candidateBases.push('http://localhost:' + p);
 
     let data;
@@ -23,136 +22,147 @@ async function loadAuthLink() {
         const url = base ? (base + '/api/me') : '/api/me';
         const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
         const parsed = await userApiFromResponse(res);
-        if (parsed && !parsed.__nonJson) { data = parsed; usedBase = base; break; }
-        // if non-JSON and contains Express 404 text, continue to next
-      } catch (err) { /* ignore and try next */ }
+        if (parsed && !parsed.__nonJson) {
+          data = parsed;
+          usedBase = base;
+          break;
+        }
+      } catch (err) {
+        // ignore and try next
+      }
     }
+
     if (!data) {
       console.warn('auth check: no JSON response from any candidate API base');
       return;
     }
     if (!data.ok || !data.user) {
       console.log('auth check: no user in session', data);
+      const userActions = document.querySelector('.user-actions');
+      if (userActions) userActions.classList.remove('is-authenticated', 'is-admin');
+      const unauthenticatedLogin = document.querySelector('.account-btn');
+      if (unauthenticatedLogin) {
+        unauthenticatedLogin.style.display = 'flex';
+      }
+      const accountIcon = document.querySelector('.account-icon-link');
+      if (accountIcon) accountIcon.style.display = 'none';
+      const adminIcon = document.querySelector('.admin-icon-link');
+      if (adminIcon) adminIcon.style.display = 'none';
       return;
     }
+
     data.user.isAdmin = !!(data.user.isAdmin || data.user.isadmin || data.user.is_admin);
     const isAdmin = data.user.isAdmin;
+    const userActions = document.querySelector('.user-actions');
+    if (userActions) {
+      userActions.classList.add('is-authenticated');
+      if (isAdmin) userActions.classList.add('is-admin');
+      else userActions.classList.remove('is-admin');
+    }
+    const unauthenticatedLogin = document.querySelector('.account-btn');
+    if (unauthenticatedLogin) unauthenticatedLogin.style.display = 'none';
     console.log('auth check /api/me ->', data, 'usedBase=', usedBase, 'document.cookie=', document.cookie.slice(0, 200));
     if (isAdmin) console.log('auth check: admin user detected', data.user);
+
     const insertAdminLink = () => {
-<<<<<<< HEAD
-      if (document.getElementById('admin-nav-link')) return false;
-      const navs = document.querySelectorAll('.navbar-nav');
-      if (!navs || navs.length === 0) return false;
-=======
-      // do not insert if admin anchor or admin li already exists
-      if (document.getElementById('admin-nav-link') || document.getElementById('admin-nav-anchor')) return false;
+      if (document.querySelector('.admin-icon-link') || document.getElementById('admin-nav-link') || document.getElementById('admin-nav-anchor')) return false;
+
+      const userActions = document.querySelector('.user-actions');
+      if (userActions) {
+        const btn = document.createElement('a');
+        btn.href = '/dashboard.html';
+        btn.title = 'Panel de administración';
+        btn.className = 'action-btn icon-action-btn admin-icon-link';
+        btn.setAttribute('aria-label', 'Panel de administración');
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3.1 8.7-7 10-3.9-1.3-7-5.5-7-10V6l7-3z"></path><path d="M9.5 12.5l1.5 1.5 3.5-4"></path></svg>';
+        const cartBtn = userActions.querySelector('.cart-btn');
+        if (cartBtn) userActions.insertBefore(btn, cartBtn);
+        else userActions.appendChild(btn);
+        return true;
+      }
+
       const containerSelectors = ['.topbar-actions', '.topbar-nav', '.navbar-nav', '.collapse.navbar-collapse', '.custom_nav-container', 'header'];
       const navContainers = [];
       containerSelectors.forEach(sel => {
-        document.querySelectorAll(sel).forEach(el => { if (el && !navContainers.includes(el)) navContainers.push(el); });
+        document.querySelectorAll(sel).forEach(el => {
+          if (el && !navContainers.includes(el)) navContainers.push(el);
+        });
       });
-      if (!navContainers || navContainers.length === 0) return false;
->>>>>>> db60f3f4af73acec62edb26ae48248e29a92c80e
+      if (!navContainers.length) return false;
+
       let inserted = false;
       navContainers.forEach(container => {
         try {
-<<<<<<< HEAD
-          if (nav && !nav.querySelector('#admin-nav-link')) {
-            const li = document.createElement('li');
-            li.id = 'admin-nav-link';
-            li.className = 'nav-item';
-            li.innerHTML = '<a class="nav-link nav-link-action" href="/dashboard.html" title="Panel administración">Panel administración</a>';
-            const accountLink = nav.querySelector('#account-nav-link');
-            if (accountLink && accountLink.parentElement) {
-              accountLink.parentElement.insertBefore(li, accountLink);
-            } else {
-              nav.appendChild(li);
-            }
-            inserted = true;
-            console.log('auth: admin link injected into navbar');
-=======
           if (!container || container.querySelector('#admin-nav-link')) return;
           const li = document.createElement('li');
           li.id = 'admin-nav-link';
-          li.className = 'nav-item icon-nav-item';
-          li.innerHTML = '<a class="nav-link no-dot" href="/dashboard.html" title="Panel administración" style="color:#000 !important; display: inline-flex; align-items: center; gap: 6px; padding: 6px 4px !important; margin: 0 !important;">'
-  + '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="20" height="20" style="fill: #000 !important; stroke: #000 !important; color: #000 !important;" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-  + '<path d="M320 64C324.6 64 329.2 65 333.4 66.9L521.8 146.8C543.8 156.1 560.2 177.8 560.1 204C559.6 303.2 518.8 484.7 346.5 567.2C329.8 575.2 310.4 575.2 293.7 567.2C121.3 484.7 80.6 303.2 80.1 204C80 177.8 96.4 156.1 118.4 146.8L306.7 66.9C310.9 65 315.4 64 320 64zM320 130.8L320 508.9C458 442.1 495.1 294.1 496 205.5L320 130.9L320 130.9z"/>'
-  + '</svg>'
-  + '<span style="font-size:0.9rem; color:#000;">Admin</span>'
-  + '</a>';
+          li.className = 'nav-item';
+          li.innerHTML = '<a class="nav-link nav-link-action" href="/dashboard.html" title="Panel de administración" aria-label="Panel de administración"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3.1 8.7-7 10-3.9-1.3-7-5.5-7-10V6l7-3z"></path><path d="M9.5 12.5l1.5 1.5 3.5-4"></path></svg></a>';
           const accountLink = container.querySelector('#account-nav-link');
           if (accountLink && accountLink.parentElement) {
             accountLink.parentElement.insertBefore(li, accountLink);
           } else {
             container.appendChild(li);
->>>>>>> db60f3f4af73acec62edb26ae48248e29a92c80e
           }
           inserted = true;
           console.log('auth: admin link injected into navbar');
-        } catch (err) { console.warn('auth: error injecting admin link', err); }
+        } catch (err) {
+          console.warn('auth: error injecting admin link', err);
+        }
       });
       return inserted;
     };
-    // add dashboard/account link for any logged-in user
+
     const insertAccountLink = () => {
-      if (document.getElementById('account-nav-link')) return true;
-<<<<<<< HEAD
-      const navs = document.querySelectorAll('.navbar-nav');
-      if (!navs || navs.length === 0) return false;
-      navs.forEach(nav => {
-        try {
-          if (nav && !nav.querySelector('#account-nav-link')) {
-            const li = document.createElement('li');
-            li.id = 'account-nav-link';
-            li.className = 'nav-item';
-            li.innerHTML = '<a class="nav-link nav-link-action" href="/user-dashboard.html" title="Mi cuenta">Mi cuenta</a>';
-            const loginLink = nav.querySelector('a[href*="login.html"]');
-            if (loginLink && loginLink.parentElement) {
-              loginLink.parentElement.insertAdjacentElement('afterend', li);
-            } else {
-              nav.appendChild(li);
-            }
-          }
-        } catch (err) { console.warn('auth: error injecting account link', err); }
+      if (document.querySelector('.account-icon-link') || document.getElementById('account-nav-link')) return true;
+
+      const userActions = document.querySelector('.user-actions');
+      if (userActions) {
+        const btn = document.createElement('a');
+        btn.href = '/user-dashboard.html';
+        btn.title = 'Mi cuenta';
+        btn.className = 'action-btn icon-action-btn account-icon-link';
+        btn.setAttribute('aria-label', 'Mi cuenta');
+        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+        const adminBtn = userActions.querySelector('.admin-icon-link');
+        const cartBtn = userActions.querySelector('.cart-btn');
+        if (adminBtn) userActions.insertBefore(btn, adminBtn);
+        else if (cartBtn) userActions.insertBefore(btn, cartBtn);
+        else userActions.appendChild(btn);
+        return true;
+      }
+
+      const containerSelectors = ['.topbar-actions', '.topbar-nav', '.navbar-nav', '.collapse.navbar-collapse', '.custom_nav-container', 'header'];
+      const navContainers = [];
+      containerSelectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+          if (el && !navContainers.includes(el)) navContainers.push(el);
+        });
       });
-      return true;
-=======
-      try {
-        const navContainers = document.querySelectorAll('.navbar-nav, .collapse.navbar-collapse, .custom_nav-container');
-        if (!navContainers || navContainers.length === 0) return false;
-        navContainers.forEach(container => {
-          if (document.getElementById('account-nav-link')) return;
+      if (!navContainers.length) return false;
+
+      let inserted = false;
+      navContainers.forEach(container => {
+        try {
+          if (!container || container.querySelector('#account-nav-link')) return;
           const li = document.createElement('li');
           li.id = 'account-nav-link';
-          li.className = 'nav-item icon-nav-item';
-          // if user is admin, inject the admin icon inline before the account icon
-          const adminHtml = isAdmin ?
-            ('<a id="admin-nav-anchor" class="nav-link no-dot admin-inline" href="/dashboard.html" title="Panel administración" style="color:#000 !important;display:inline-flex;align-items:center;padding:6px 4px !important;margin:0 !important">'
-            + '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="20" height="20" style="fill: #000 !important; stroke: #000 !important; color: #000 !important;" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-            + '<path d="M320 64C324.6 64 329.2 65 333.4 66.9L521.8 146.8C543.8 156.1 560.2 177.8 560.1 204C559.6 303.2 518.8 484.7 346.5 567.2C329.8 575.2 310.4 575.2 293.7 567.2C121.3 484.7 80.6 303.2 80.1 204C80 177.8 96.4 156.1 118.4 146.8L306.7 66.9C310.9 65 315.4 64 320 64zM320 130.8L320 508.9C458 442.1 495.1 294.1 496 205.5L320 130.9L320 130.9z"/>'
-            + '</svg>'
-            + '</a>') : '';
-
-          li.innerHTML = adminHtml + `
-            <a class="nav-link" href="/user-dashboard.html" title="Mi cuenta" style="display:flex;align-items:center;color:#fff;padding:6px 4px !important;margin:0 !important">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z"></path>
-                <path d="M2 22c0-3.314 4.686-6 10-6s10 2.686 10 6"></path>
-              </svg>
-            </a>`;
-          const cartEl = container.querySelector('.nav-cart');
-          const ul = container.querySelector('.navbar-nav');
-          if (cartEl && cartEl.parentElement) cartEl.parentElement.insertBefore(li, cartEl.nextSibling);
-          else if (ul && ul.parentElement) ul.parentElement.appendChild(li);
-          else container.appendChild(li);
-        });
-        return true;
-      } catch (err) { console.warn('auth: error injecting account link', err); return false; }
->>>>>>> db60f3f4af73acec62edb26ae48248e29a92c80e
+          li.className = 'nav-item';
+          li.innerHTML = '<a class="nav-link nav-link-action" href="/user-dashboard.html" title="Mi cuenta" aria-label="Mi cuenta"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></a>';
+          const loginLink = container.querySelector('a[href*="login.html"]');
+          if (loginLink && loginLink.parentElement) {
+            loginLink.parentElement.insertAdjacentElement('afterend', li);
+          } else {
+            container.appendChild(li);
+          }
+          inserted = true;
+        } catch (err) {
+          console.warn('auth: error injecting account link', err);
+        }
+      });
+      return inserted;
     };
-    // try immediate insert, otherwise retry a few times
+
     if (!insertAccountLink()) {
       let aAttempts = 0;
       const aIv = setInterval(() => {
@@ -161,6 +171,7 @@ async function loadAuthLink() {
         if (ok2 || aAttempts >= 6) clearInterval(aIv);
       }, 300);
     }
+
     if (isAdmin) {
       if (!insertAdminLink()) {
         let attempts = 0;
@@ -171,20 +182,23 @@ async function loadAuthLink() {
         }, 300);
       }
     }
-    // hide any 'Login' links when authenticated
+
     const hideLoginLinks = () => {
       try {
-        // anchors that explicitly link to login.html
         const sel = 'a[href*="login.html"]';
         document.querySelectorAll(sel).forEach(el => el.style.display = 'none');
-        // also hide by visible text (Spanish/English)
         document.querySelectorAll('.nav-item a').forEach(a => {
           if (/iniciar sesión|iniciar|login/i.test((a.textContent || '').trim())) a.style.display = 'none';
         });
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        // ignore
+      }
     };
+
     hideLoginLinks();
-  } catch (e) { console.warn('auth check failed', e); }
+  } catch (e) {
+    console.warn('auth check failed', e);
+  }
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadAuthLink);

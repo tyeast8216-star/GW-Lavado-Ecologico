@@ -37,32 +37,135 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function updateCartCountElements() {
     const qty = getCartQty();
-    document.querySelectorAll('.cart-count').forEach(el => {
+    document.querySelectorAll('.cart-count, .cart-badge').forEach(el => {
       el.textContent = qty;
-      // show parent cart icon if on store page
       const parent = el.closest('.nav-cart');
-      if (parent) { if (qty>0) parent.classList.add('show'); else parent.classList.remove('show'); }
+      if (parent) {
+        if (qty > 0) parent.classList.add('show');
+        else parent.classList.remove('show');
+      }
+      const actionCart = el.closest('.cart-btn');
+      if (actionCart && qty > 0) {
+        actionCart.setAttribute('data-count', String(qty));
+      }
+    });
+    document.querySelectorAll('.cart-btn').forEach(btn => {
+      const badge = btn.querySelector('.cart-badge');
+      if (badge) badge.textContent = String(qty);
     });
   }
   function renderCartPage() {
     const cart = getCart();
     const container = document.getElementById('cart-content');
     if (!container) return;
+
     if (cart.length === 0) {
-      container.innerHTML = '<p>El carrito está vacío.</p>';
+      container.innerHTML = `
+        <div class="cart-hero-banner">
+          <div>
+            <span class="cart-hero-kicker">Mi compra</span>
+            <h2>Tu carrito</h2>
+          </div>
+          <span class="cart-hero-badge">0 artículos</span>
+        </div>
+        <div class="cart-empty-state">
+          <div class="cart-empty-icon">🛒</div>
+          <h3>Tu carrito está vacío</h3>
+          <p>Aún no has añadido ningún producto.</p>
+          <a href="store.html" class="btn btn-primary">Explorar productos</a>
+        </div>
+      `;
       return;
     }
-    let html = '<table class="table table-striped"><thead><tr><th>Producto</th><th>Precio</th><th>Cant.</th><th>Total</th><th></th></tr></thead><tbody>';
+
     let grand = 0;
-    cart.forEach(item => {
-      const total = item.price * item.qty; grand += total;
-      html += `<tr><td>${item.name}</td><td>€${item.price.toFixed(2)}</td><td>${item.qty}</td><td>€${total.toFixed(2)}</td><td><button class="btn btn-sm btn-danger remove-item" data-id="${item.id}">Eliminar</button></td></tr>`;
-    });
-    html += `</tbody></table><div class="text-right"><h4>Total: €${grand.toFixed(2)}</h4><button id="checkout" class="btn btn-success">Pagar</button> <button id="paypal-checkout" class="btn btn-light" style="border:1px solid #ddd;margin-left:10px;display:inline-flex;align-items:center"><img src="https://www.paypalobjects.com/webstatic/icon/pp258.png" alt="PayPal" style="height:22px;margin-right:8px"> Pagar con PayPal</button></div>`;
-    container.innerHTML = html;
-    document.querySelectorAll('.remove-item').forEach(btn => btn.addEventListener('click', function () {
+    const itemMarkup = cart.map(item => {
+      const total = item.price * item.qty;
+      grand += total;
+      const image = item.image && item.image.length ? item.image : 'images/slider-img.png';
+
+      return `
+        <article class="cart-item-card">
+          <div class="cart-item-image-wrap">
+            <div class="cart-item-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 7V6a5 5 0 0 1 10 0v1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M5 9h14l-1 10H6L5 9Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <img src="${image}" alt="${item.name}" class="cart-item-image">
+          </div>
+          <div class="cart-item-main">
+            <div class="cart-item-header">
+              <div>
+                <h4>${item.name}</h4>
+                <span class="cart-item-price">€${item.price.toFixed(2)} c/u</span>
+              </div>
+              <button class="btn btn-sm btn-outline-danger cart-remove-btn" data-id="${item.id}">Eliminar</button>
+            </div>
+            <div class="cart-item-footer">
+              <div class="cart-qty-control" aria-label="Cantidad de ${item.name}">
+                <button type="button" class="cart-qty-btn" data-id="${item.id}" data-action="minus" aria-label="Disminuir cantidad">−</button>
+                <span class="cart-qty-value">${item.qty}</span>
+                <button type="button" class="cart-qty-btn" data-id="${item.id}" data-action="plus" aria-label="Aumentar cantidad">+</button>
+              </div>
+              <div class="cart-item-total">€${total.toFixed(2)}</div>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="cart-hero-banner">
+        <div>
+          <span class="cart-hero-kicker">Mi compra</span>
+          <h2>Tu carrito</h2>
+        </div>
+        <span class="cart-hero-badge">${cart.reduce((sum, item) => sum + (item.qty || 0), 0)} artículos</span>
+      </div>
+      <div class="cart-shell">
+        <div class="cart-items-panel">
+          <div class="cart-list-header">
+            <h3>Productos</h3>
+            <span>${cart.reduce((sum, item) => sum + (item.qty || 0), 0)} artículos</span>
+          </div>
+          ${itemMarkup}
+        </div>
+        <aside class="cart-summary-card">
+          <h3>Resumen</h3>
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <strong>€${grand.toFixed(2)}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Envío</span>
+            <strong>Gratis</strong>
+          </div>
+          <div class="summary-row summary-row-total">
+            <span>Total</span>
+            <strong>€${grand.toFixed(2)}</strong>
+          </div>
+          <button id="checkout" class="btn cart-primary-btn">Pagar</button>
+          <button id="paypal-checkout" class="btn cart-paypal-btn">
+            <img src="https://www.paypalobjects.com/webstatic/icon/pp258.png" alt="PayPal" class="paypal-icon"> Pagar con PayPal
+          </button>
+          <a href="store.html" class="btn cart-secondary-btn">Seguir comprando</a>
+        </aside>
+      </div>
+    `;
+
+    document.querySelectorAll('.cart-remove-btn').forEach(btn => btn.addEventListener('click', function () {
       const id = this.dataset.id; const cart = getCart(); const idx = cart.findIndex(i => i.id === id); if (idx > -1) { cart.splice(idx, 1); saveCart(cart); renderCartPage(); }
     }));
+
+    document.querySelectorAll('.cart-qty-btn').forEach(btn => btn.addEventListener('click', function () {
+      const id = this.dataset.id;
+      const delta = this.dataset.action === 'plus' ? 1 : -1;
+      changeQty(id, delta);
+      renderCartPage();
+    }));
+
     const checkout = document.getElementById('checkout'); if (checkout) checkout.addEventListener('click', async function () {
       const cartNow = getCart();
       if (!cartNow || cartNow.length === 0) { showToast('El carrito está vacío', 'info'); return; }
@@ -228,6 +331,15 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   // Clear cart button
   const clearBtn = document.getElementById('clear-cart'); if (clearBtn) clearBtn.addEventListener('click', function () { localStorage.removeItem('cart'); renderCartPage(); });
+  document.querySelectorAll('.cart-btn').forEach(btn => {
+    btn.addEventListener('click', function (event) {
+      const href = this.getAttribute('href');
+      if (href && href !== '#') return;
+      event.preventDefault();
+      window.location.href = 'cart.html';
+    });
+  });
+
   // Render cart page if present
   renderCartPage();
   // Update cart counts in navbar if present

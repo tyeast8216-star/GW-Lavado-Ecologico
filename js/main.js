@@ -19,19 +19,105 @@ window.addEventListener("scroll", function(){
         }
 })
 
+function setCurrentNavLink() {
+    const currentPath = (window.location.pathname || '/').split('/').pop() || 'index.html';
+    const currentPage = currentPath || 'index.html';
+
+    document.querySelectorAll('.nav-links a, .drawer-nav a').forEach(link => {
+        const href = (link.getAttribute('href') || '').split('?')[0].split('#')[0];
+        if (!href || href === '#') {
+            link.classList.remove('active');
+            link.removeAttribute('aria-current');
+            return;
+        }
+
+        const normalizedHref = href.replace(/^\//, '');
+        const isActive = normalizedHref === currentPage;
+
+        link.classList.toggle('active', isActive);
+        if (isActive) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
+        }
+    });
+}
+
 // Side drawer menu for mobile/tablet
 document.addEventListener('DOMContentLoaded', function () {
+    setCurrentNavLink();
     function createDrawer() {
         if (document.getElementById('side-drawer')) return;
-        const backdrop = document.createElement('div'); backdrop.className = 'drawer-backdrop'; backdrop.id = 'drawer-backdrop';
-        const drawer = document.createElement('aside'); drawer.className = 'side-drawer'; drawer.id = 'side-drawer';
-        const closeBtn = document.createElement('button'); closeBtn.className = 'drawer-close'; closeBtn.innerHTML = '&times;';
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'drawer-backdrop';
+        backdrop.id = 'drawer-backdrop';
+
+        const drawer = document.createElement('aside');
+        drawer.className = 'side-drawer';
+        drawer.id = 'side-drawer';
+
+        const header = document.createElement('div');
+        header.className = 'side-drawer-header';
+
+        const brand = document.createElement('div');
+        brand.className = 'side-drawer-brand';
+        brand.innerHTML = '<img src="./images/logogwlavadoeco.png" alt="GW Lavado Ecologico"> <span>GW</span>';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'drawer-close';
+        closeBtn.type = 'button';
+        closeBtn.setAttribute('aria-label', 'Cerrar menú');
+        closeBtn.innerHTML = '&times;';
         closeBtn.addEventListener('click', closeDrawer);
-        drawer.appendChild(closeBtn);
-        const navWrap = document.createElement('div'); navWrap.className = 'drawer-nav'; navWrap.id = 'drawer-nav';
+
+        header.appendChild(brand);
+        header.appendChild(closeBtn);
+
+        const navWrap = document.createElement('nav');
+        navWrap.className = 'drawer-nav';
+        navWrap.id = 'drawer-nav';
+
+        drawer.appendChild(header);
         drawer.appendChild(navWrap);
-        document.body.appendChild(backdrop); document.body.appendChild(drawer);
+
+        document.body.appendChild(backdrop);
+        document.body.appendChild(drawer);
         backdrop.addEventListener('click', closeDrawer);
+    }
+
+    function populateDrawer() {
+        const target = document.getElementById('drawer-nav');
+        if (!target) return;
+
+        const sourceLinks = document.querySelectorAll('.nav-links a');
+        const sources = Array.from(sourceLinks);
+        target.innerHTML = '';
+
+        sources.forEach(link => {
+            const clone = link.cloneNode(true);
+            clone.addEventListener('click', closeDrawer);
+            target.appendChild(clone);
+        });
+
+        const userActions = document.querySelector('.user-actions');
+        if (userActions) {
+            const account = userActions.querySelector('.account-btn');
+            const cart = userActions.querySelector('.cart-btn');
+            if (account) {
+                const item = account.cloneNode(true);
+                item.classList.add('mobile-user-item');
+                item.setAttribute('aria-label', 'Ingresar');
+                item.addEventListener('click', closeDrawer);
+                target.appendChild(item);
+            }
+            if (cart) {
+                const item = cart.cloneNode(true);
+                item.classList.add('mobile-user-item');
+                item.addEventListener('click', closeDrawer);
+                target.appendChild(item);
+            }
+        }
     }
 
     function setDrawerState(isOpen) {
@@ -41,35 +127,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (drawer) drawer.classList.toggle('open', isOpen);
         if (backdrop) backdrop.classList.toggle('open', isOpen);
         document.body.style.overflow = isOpen ? 'hidden' : '';
-
-        document.querySelectorAll('.navbar-toggler').forEach(btn => {
-            btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        });
     }
 
     function openDrawer() {
         createDrawer();
-        const drawer = document.getElementById('side-drawer');
-        const backdrop = document.getElementById('drawer-backdrop');
-        if (!drawer || !backdrop) return;
-
-        // clone navbar links
-        const source = document.querySelector('.custom_nav-container .navbar-nav');
-        const target = document.getElementById('drawer-nav');
-        if (source && target) {
-            target.innerHTML = '';
-            const clone = source.cloneNode(true);
-            clone.querySelectorAll('.nav-item').forEach(li => { li.classList.remove('active'); });
-            Array.from(clone.children).forEach(child => {
-                const link = child.querySelector('.nav-link');
-                if (link) {
-                    const a = link.cloneNode(true);
-                    a.addEventListener('click', closeDrawer);
-                    target.appendChild(a);
-                }
-            });
-        }
-
+        populateDrawer();
         setDrawerState(true);
     }
 
@@ -77,24 +139,19 @@ document.addEventListener('DOMContentLoaded', function () {
         setDrawerState(false);
     }
 
-    // attach toggler to open drawer on small screens
-    document.querySelectorAll('.navbar-toggler').forEach(btn => {
-        btn.addEventListener('click', function (e) {
-            if (window.innerWidth < 992) {
-                e.preventDefault(); e.stopPropagation();
-                const isOpen = document.getElementById('side-drawer')?.classList.contains('open');
-                if (isOpen) {
-                    closeDrawer();
-                } else {
-                    openDrawer();
-                }
-            }
-            // otherwise allow normal bootstrap collapse behavior
+    const mobileBtn = document.querySelector('.mobile-menu-btn');
+    if (mobileBtn) {
+        mobileBtn.addEventListener('click', function () {
+            const drawer = document.getElementById('side-drawer');
+            const isOpen = drawer && drawer.classList.contains('open');
+            if (isOpen) closeDrawer();
+            else openDrawer();
         });
-    });
+    }
 
-    // close on escape
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') closeDrawer();
+    });
 });
 
 // Contact form submission handler with optional reCAPTCHA
