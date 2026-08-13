@@ -498,17 +498,33 @@ function attachResetPasswordFlow() {
 }
 
 function setLoginFeedback(form, message, kind = 'danger') {
-  if (!form) return;
-  const feedback = form.querySelector('.login-feedback');
-  if (feedback) {
-    feedback.textContent = message || '';
-    feedback.style.display = message ? 'block' : 'none';
-    feedback.style.color = kind === 'success' ? '#15803d' : '#b00020';
-    feedback.style.marginTop = '10px';
-    feedback.style.fontSize = '14px';
-    feedback.style.fontWeight = '600';
-    feedback.style.textAlign = 'center';
+  let feedback = document.getElementById('loginModalError');
+
+  if (!feedback && form) {
+    feedback = form.querySelector('.login-feedback');
   }
+
+  if (!feedback) {
+    feedback = document.createElement('div');
+    feedback.className = 'login-feedback';
+    feedback.id = 'loginModalError';
+    feedback.setAttribute('role', 'alert');
+    feedback.setAttribute('aria-live', 'polite');
+    const modal = document.getElementById('loginModal');
+    const submitBtn = modal ? modal.querySelector('button[type="submit"]') : (form ? form.querySelector('button[type="submit"]') : null);
+    if (submitBtn) submitBtn.insertAdjacentElement('afterend', feedback);
+    else if (form) form.appendChild(feedback);
+    else document.body.appendChild(feedback);
+  }
+
+  feedback.textContent = message || '';
+  feedback.style.display = message ? 'block' : 'none';
+  feedback.style.color = kind === 'success' ? '#15803d' : '#b00020';
+  feedback.style.marginTop = '10px';
+  feedback.style.fontSize = '14px';
+  feedback.style.fontWeight = '600';
+  feedback.style.textAlign = 'center';
+
   try {
     showToast(message || 'Error', kind);
   } catch (e) {
@@ -521,7 +537,7 @@ function attachLoginFormHandler() {
   forms.forEach(form => {
     if (!form || form.dataset.loginBound) return;
     form.addEventListener('input', () => {
-      const feedback = form.querySelector('.login-feedback');
+      const feedback = document.getElementById('loginModalError') || form.querySelector('.login-feedback');
       if (feedback) {
         feedback.textContent = '';
         feedback.style.display = 'none';
@@ -545,6 +561,16 @@ function attachLoginFormHandler() {
           return;
         }
         const msg = (resp && resp.message) ? resp.message : 'Credenciales incorrectas';
+        const modalError = document.getElementById('loginModalError') || form.querySelector('.login-feedback');
+        if (modalError) {
+          modalError.textContent = msg;
+          modalError.style.display = 'block';
+          modalError.style.color = '#b00020';
+          modalError.style.marginTop = '10px';
+          modalError.style.fontSize = '14px';
+          modalError.style.fontWeight = '600';
+          modalError.style.textAlign = 'center';
+        }
         setLoginFeedback(form, msg, 'danger');
       } catch (err) {
         console.error('login submit error', err);
