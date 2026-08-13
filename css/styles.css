@@ -3050,6 +3050,14 @@ body.user-dashboard-page .btn-primary:hover {
     padding: 2rem 1rem 3rem;
   }
 
+  .car-slider-controls {
+    margin-top: -100px;
+}
+
+.read-more-link {
+    top: -25px;
+}
+
   .model-nav {
     flex-wrap: wrap;
     gap: 0.75rem 1rem;
