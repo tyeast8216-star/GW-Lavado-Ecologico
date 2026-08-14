@@ -1,10 +1,12 @@
 window.addEventListener("scroll", function(){
         var header = document.querySelector("header");
+        var mobileBar = document.querySelector('.mobile-bar');
         if (!header) return;
         // If the page/header requests no scroll-navbar behavior, ensure classes are removed and exit
         if (document.body.classList.contains('no-scroll-navbar') || header.classList.contains('no-scroll-navbar')) {
             if (header.classList.contains('abajo')) header.classList.remove('abajo');
             if (document.body.classList.contains('scrolled')) document.body.classList.remove('scrolled');
+            if (mobileBar && mobileBar.classList.contains('hidden')) mobileBar.classList.remove('hidden');
             return;
         }
         var scrolled = window.scrollY > 0;
@@ -12,10 +14,14 @@ window.addEventListener("scroll", function(){
         if (window.innerWidth >= 992) {
             header.classList.toggle("abajo", scrolled);
             document.body.classList.toggle("scrolled", scrolled);
+            if (mobileBar && mobileBar.classList.contains('hidden')) mobileBar.classList.remove('hidden');
         } else {
             // ensure mobile does not get the scrolled classes
             if (header.classList.contains('abajo')) header.classList.remove('abajo');
             if (document.body.classList.contains('scrolled')) document.body.classList.remove('scrolled');
+            if (mobileBar) {
+                mobileBar.classList.toggle('hidden', scrolled);
+            }
         }
 })
 
@@ -47,7 +53,7 @@ function setCurrentNavLink() {
 document.addEventListener('DOMContentLoaded', function () {
     setCurrentNavLink();
 
-    document.querySelectorAll('.search-bar').forEach(function (searchBar) {
+    function attachSearchBehavior(searchBar) {
         const input = searchBar.querySelector('input[type="text"]');
         const button = searchBar.querySelector('.search-btn');
         if (!input || !button) return;
@@ -157,6 +163,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 doSearch();
             }
         });
+    }
+
+    document.querySelectorAll('.search-bar, .mobile-search-bar').forEach(function (searchBar) {
+        attachSearchBehavior(searchBar);
     });
 
     function createDrawer() {

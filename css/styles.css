@@ -99,6 +99,16 @@ body {
   display: none;
 }
 
+.mobile-bar {
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  will-change: transform;
+}
+
+.mobile-bar.hidden {
+  transform: translateY(-120%);
+  opacity: 0;
+}
+
 /* 3. ENLACES DE NAVEGACIÓN */
 .nav-links {
   display: flex;
