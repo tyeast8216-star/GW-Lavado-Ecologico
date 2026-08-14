@@ -46,6 +46,119 @@ function setCurrentNavLink() {
 // Side drawer menu for mobile/tablet
 document.addEventListener('DOMContentLoaded', function () {
     setCurrentNavLink();
+
+    document.querySelectorAll('.search-bar').forEach(function (searchBar) {
+        const input = searchBar.querySelector('input[type="text"]');
+        const button = searchBar.querySelector('.search-btn');
+        if (!input || !button) return;
+
+        const normalize = function (value) {
+            return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        };
+
+        const showSearchWarning = function (message) {
+            const toastApi = typeof window.showToast === 'function' ? window.showToast : (typeof showToast === 'function' ? showToast : null);
+            if (toastApi) {
+                toastApi(message, 'info');
+            } else {
+                let wrap = document.querySelector('.toast-wrap');
+                if (!wrap) {
+                    wrap = document.createElement('div');
+                    wrap.className = 'toast-wrap';
+                    document.body.appendChild(wrap);
+                }
+                const el = document.createElement('div');
+                el.className = 'toast info show';
+                el.textContent = message;
+                wrap.appendChild(el);
+                setTimeout(function () {
+                    el.classList.remove('show');
+                    setTimeout(function () { el.remove(); }, 200);
+                }, 3000);
+            }
+            input.focus();
+        };
+
+        const normalizeProductText = function (text) {
+            return String(text || '')
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9\s]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
+
+        const doSearch = function () {
+            const value = (input.value || '').trim();
+            if (!value) {
+                showSearchWarning('Escribe algo para buscar productos.');
+                return;
+            }
+
+            const q = normalize(value);
+            if (q.length < 2) {
+                showSearchWarning('Introduce al menos 2 caracteres para buscar productos.');
+                return;
+            }
+
+            const API_BASE = (window.API_BASE || window.location.origin).replace(/\/$/, '');
+            const url = API_BASE + '/api/products?perPage=100';
+
+            fetch(url, { credentials: 'include' })
+                .then(function (response) {
+                    const ct = response.headers.get('content-type') || '';
+                    if (!ct.includes('application/json')) {
+                        throw new Error('No JSON');
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    const allProducts = Array.isArray(data && data.products) ? data.products : [];
+                    const matches = allProducts.filter(function (product) {
+                        const text = normalizeProductText(product && (product.name || product.description || ''));
+                        const target = normalizeProductText(value);
+                        return text.indexOf(target) !== -1;
+                    });
+
+                    if (!matches.length) {
+                        showSearchWarning('No se obtuvieron resultados para: "' + value + '"');
+                        return;
+                    }
+
+                    const currentPath = (window.location.pathname || '/').split('/').pop() || 'index.html';
+                    const currentPage = currentPath.toLowerCase();
+
+                    if (currentPage === 'tienda-virtual.html') {
+                        const storeSearch = document.getElementById('store-controls');
+                        const storeInput = storeSearch && storeSearch.querySelector('input');
+                        if (storeInput) {
+                            storeInput.value = value;
+                            storeInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            return;
+                        }
+                    }
+
+                    window.location.href = 'tienda-virtual.html?q=' + encodeURIComponent(value);
+                })
+                .catch(function () {
+                    showSearchWarning('No se obtuvieron resultados para: "' + value + '"');
+                });
+        };
+
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
+            doSearch();
+        });
+
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                doSearch();
+            }
+        });
+    });
+
     function createDrawer() {
         if (document.getElementById('side-drawer')) return;
 

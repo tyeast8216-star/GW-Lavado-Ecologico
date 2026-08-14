@@ -5,20 +5,79 @@ async function loadStoreProducts(){
   if(!controls) return;
   // state
   const state = window.__storeState = window.__storeState || { page:1, perPage:12, q:'', category:'', inStock:0 };
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlQuery = (urlParams.get('q') || '').trim();
+  if (urlQuery && !state.q) state.q = urlQuery;
+  if (!urlQuery && state.q) state.q = '';
+  if (urlQuery && state.q !== urlQuery) state.q = urlQuery;
+
+  const normalizeProductText = function (text) {
+    return String(text || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   try{
     const API_BASE = (window.API_BASE || window.location.origin).replace(/\/$/, '');
     const params = new URLSearchParams();
     if(state.page) params.set('page', state.page);
     if(state.perPage) params.set('perPage', state.perPage);
-    if(state.q) params.set('q', state.q);
     if(state.category) params.set('category', state.category);
     if(state.inStock) params.set('inStock', state.inStock ? '1' : '0');
+
     const res = await fetch(API_BASE + '/api/products?' + params.toString(), { credentials: 'include' });
     const ct = res.headers.get('content-type') || '';
-    if(!ct.includes('application/json')) return; // keep static if any
+    if(!ct.includes('application/json')) return;
     const data = await res.json();
     if(!data || !data.ok) return;
-    const products = data.products || [];
+
+    let products = Array.isArray(data.products) ? data.products : [];
+    if (state.q) {
+      const qNorm = normalizeProductText(state.q);
+      products = products.filter(function (p) {
+        const txt = normalizeProductText((p && (p.name || p.description || '')) + ' ' + (p && p.category || ''));
+        return txt.indexOf(qNorm) !== -1;
+      });
+    }
+
+    if (state.q && products.length === 0) {
+      const msg = 'No se obtuvieron resultados para: "' + state.q + '"';
+      const toastApi = typeof window.showToast === 'function' ? window.showToast : (typeof showToast === 'function' ? showToast : null);
+      if (toastApi) {
+        const last = window.__lastNoProductMessage;
+        if (last !== msg) {
+          window.__lastNoProductMessage = msg;
+          toastApi(msg, 'info');
+        }
+      } else {
+        let wrap = document.querySelector('.toast-wrap');
+        if (!wrap) {
+          wrap = document.createElement('div');
+          wrap.className = 'toast-wrap';
+          document.body.appendChild(wrap);
+        }
+        const last = wrap.dataset.lastMessage;
+        if (last !== msg) {
+          wrap.dataset.lastMessage = msg;
+          const el = document.createElement('div');
+          el.className = 'toast info show';
+          el.textContent = msg;
+          wrap.appendChild(el);
+          setTimeout(function () {
+            el.classList.remove('show');
+            setTimeout(function () { el.remove(); wrap.dataset.lastMessage = ''; }, 200);
+          }, 3000);
+        }
+      }
+    } else {
+      window.__lastNoProductMessage = '';
+      const wrap = document.querySelector('.toast-wrap');
+      if (wrap) wrap.dataset.lastMessage = '';
+    }
     grid.innerHTML = '';
     products.forEach(p => {
       const col = document.createElement('div'); col.className = 'col-sm-6 col-md-4 col-lg-3';

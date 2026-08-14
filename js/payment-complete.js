@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('total').textContent = `$${(subtotal + (lastOrder.shipping||0)).toFixed(2)}`;
 
   // Redirección: botón
-  // Determina el destino en este orden: parámetro URL `redirect`/`redirectTo`, localStorage `redirectTo`, por defecto `store.html`.
+  // Determina el destino en este orden: parámetro URL `redirect`/`redirectTo`, localStorage `redirectTo`, por defecto `tienda-virtual.html`.
   function getRedirectUrl() {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function () {
       return false;
     }
 
-    return looksLoggedIn() ? 'user-dashboard.html' : 'store.html';
+    return looksLoggedIn() ? 'user-dashboard.html' : 'tienda-virtual.html';
   }
   const redirectUrl = getRedirectUrl();
   const continuarBtn = document.getElementById('continuarBtn');

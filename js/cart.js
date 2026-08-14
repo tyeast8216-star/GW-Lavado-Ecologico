@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <div class="cart-empty-icon">🛒</div>
           <h3>Tu carrito está vacío</h3>
           <p>Aún no has añadido ningún producto.</p>
-          <a href="store.html" class="btn btn-primary">Explorar productos</a>
+          <a href="tienda-virtual.html" class="btn btn-primary">Explorar productos</a>
         </div>
       `;
       return;
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <button id="paypal-checkout" class="btn cart-paypal-btn">
             <img src="https://www.paypalobjects.com/webstatic/icon/pp258.png" alt="PayPal" class="paypal-icon"> Pagar con PayPal
           </button>
-          <a href="store.html" class="btn cart-secondary-btn">Seguir comprando</a>
+          <a href="tienda-virtual.html" class="btn cart-secondary-btn">Seguir comprando</a>
         </aside>
       </div>
     `;
@@ -349,8 +349,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const btn = wrapper.querySelector('.nav-cart-btn');
     const dropdown = wrapper.querySelector('.nav-cart-dropdown');
     if (!btn || !dropdown) return;
-    // Show nav-cart on store page and on cursos page
-    if (window.location.href.indexOf('store.html') === -1 && window.location.href.indexOf('cursos.html') === -1) {
+    // Show nav-cart on tienda page and on cursos page
+    if (window.location.href.indexOf('tienda-virtual.html') === -1 && window.location.href.indexOf('cursos.html') === -1) {
       wrapper.classList.remove('show');
     } else {
       wrapper.classList.add('show');
