@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
 
                     if (!matches.length) {
-                        showSearchWarning('No se obtuvieron resultados para: "' + value + '"');
+                        window.location.href = 'tienda-virtual.html?q=' + encodeURIComponent(value) + '#productos-section';
                         return;
                     }
 
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     }
 
-                    window.location.href = 'tienda-virtual.html?q=' + encodeURIComponent(value);
+                    window.location.href = 'tienda-virtual.html?q=' + encodeURIComponent(value) + '#productos-section';
                 })
                 .catch(function () {
                     showSearchWarning('No se obtuvieron resultados para: "' + value + '"');

@@ -151,9 +151,22 @@ document.addEventListener('DOMContentLoaded', function () {
             <img src="https://www.paypalobjects.com/webstatic/icon/pp258.png" alt="PayPal" class="paypal-icon"> Pagar con PayPal
           </button>
           <a href="tienda-virtual.html" class="btn cart-secondary-btn">Seguir comprando</a>
+          <button id="clear-cart" type="button" class="btn cart-secondary-btn" style="background: #dc3545; border-color: #dc3545; color: #fff;">Vaciar carrito</button>
         </aside>
       </div>
     `;
+
+    const clearCartBtn = document.getElementById('clear-cart');
+    if (clearCartBtn) {
+      clearCartBtn.addEventListener('click', function () {
+        if (confirm('¿Vaciar el carrito?')) {
+          localStorage.removeItem('cart');
+          renderCartPage();
+          updateCartCountElements();
+          showToast('Carrito vaciado', 'info');
+        }
+      });
+    }
 
     document.querySelectorAll('.cart-remove-btn').forEach(btn => btn.addEventListener('click', function () {
       const id = this.dataset.id; const cart = getCart(); const idx = cart.findIndex(i => i.id === id); if (idx > -1) { cart.splice(idx, 1); saveCart(cart); renderCartPage(); }
@@ -299,38 +312,44 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   document.addEventListener('click', async function (e) {
-    const btn = e.target.closest && e.target.closest('.add-to-cart');
+    const btn = e.target.closest && e.target.closest('.add-to-cart, .st-btn-comprar, .add-to-cart-from-modal');
     if (!btn) return;
     e.preventDefault();
-    // ensure user is authenticated before adding to cart
+
     const ok = await ensureAuthenticated();
     if (!ok) {
       showToast('Debes iniciar sesión para añadir al carrito', 'info');
       setTimeout(() => { if (window.openLoginModal) { window.openLoginModal(); } else { window.location.href = 'login.html'; } }, 600);
       return;
     }
-    const id = btn.dataset.id;
-    let name = btn.dataset.name;
-    let price = btn.dataset.price;
-    const image = btn.dataset.image;
+
+    const id = btn.dataset.id || btn.getAttribute('data-id');
+    let name = btn.dataset.name || btn.getAttribute('data-name') || '';
+    let price = btn.dataset.price || btn.getAttribute('data-price') || '';
+    const image = btn.dataset.image || btn.getAttribute('data-image') || '';
+
     if ((!name || name.trim() === '') || (!price || price.trim() === '')) {
-      const card = btn.closest('.product-card');
+      const card = btn.closest('.product-card') || btn.closest('.st-product-card');
       if (card) {
         if (!name || name.trim() === '') {
-          const h = card.querySelector('h4'); if (h) name = h.textContent.trim();
+          const h = card.querySelector('h4, .st-product-title'); if (h) name = h.textContent.trim();
         }
         if (!price || price.trim() === '') {
-          const p = card.querySelector('.price'); if (p) {
+          const p = card.querySelector('.price, .st-price'); if (p) {
             const raw = p.textContent.replace(/[€\s]/g, '').replace(',', '.');
             price = parseFloat(raw) || 0;
           }
         }
       }
     }
+
+    if (!id) {
+      showToast('Este producto no tiene identificador', 'warn');
+      return;
+    }
+
     addToCart(id, name, price, image);
   });
-  // Clear cart button
-  const clearBtn = document.getElementById('clear-cart'); if (clearBtn) clearBtn.addEventListener('click', function () { localStorage.removeItem('cart'); renderCartPage(); });
   document.querySelectorAll('.cart-btn').forEach(btn => {
     btn.addEventListener('click', function (event) {
       const href = this.getAttribute('href');

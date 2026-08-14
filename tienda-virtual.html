@@ -101,8 +101,21 @@
             <!-- Migas de pan -->
             <!-- Contenido Principal -->
             <div class="st-content-layout">
+                <button class="st-filter-toggle" type="button" aria-label="Abrir filtros">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <strong>Filtros</strong>
+                </button>
+
+                <div class="st-filter-backdrop" aria-hidden="true"></div>
+
                 <!-- Filtros Laterales -->
                 <aside class="st-sidebar-filters">
+                    <div class="st-filter-header-mobile">
+                        <h4>Filtros</h4>
+                        <button type="button" class="st-filter-close" aria-label="Cerrar filtros">×</button>
+                    </div>
                     <div class="st-filter-group">
                         <h4>Tipo de producto</h4>
                         <select id="filter-product-type" class="st-filter-select">
@@ -140,20 +153,52 @@
                 </aside>
 
                 <!-- Área de Productos -->
-                <div class="st-products-area">
+                <div class="st-products-area" id="productos-section">
                     <div class="st-products-header">
                         <h3 id="products-results-title" style="color: #666;">Productos</h3>
-                        <span id="products-sort-label" style="font-size: 13px; color: #666;">Alfabético A-Z</span>
+                        <button id="reset-search-btn" type="button" class="st-filter-btn" style="display:none; margin-left:auto; padding:8px 12px; border:1px solid #d9d9d9; background:#fff; border-radius:8px; color:#1b3a5c; cursor:pointer; font-size:13px;">Restablecer búsqueda</button>
                     </div>
-
+                    <div id="no-results-search-wrapper" style="display:none; margin-top:12px;">
+                        <p id="no-results-search-message" style="margin-left: 6px;color:#000000; font-size:14px;">No se encontraron resultados para tu búsqueda.</p>
+                    </div>
                     <div class="st-products-grid" id="real-products-grid"></div>
                     <div class="st-pagination" id="products-pagination" aria-label="Paginación de productos"></div>
                 </div>
             </div>
         </div>
     </section>
+
+    <div class="modal fade" id="courseModal" tabindex="-1" role="dialog" aria-labelledby="courseModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="courseModalLabel"></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-5">
+                <img src="" alt="" class="img-fluid modal-image" onerror="this.src='images/slider-img.png'">
+              </div>
+              <div class="col-md-7">
+                <p class="modal-desc"></p>
+                <div class="modal-stock" style="font-weight:700; margin-top:12px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            <button type="button" class="btn btn-primary add-to-cart-from-modal">Añadir al carrito</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="js/jquery-3.4.1.min.js"></script>
     <script src="js/bootstrap.js"></script>
+    <script src="js/toast.js"></script>
     <script src="js/cart.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
@@ -167,14 +212,48 @@
             const sortSelect = document.getElementById('filter-sort');
             const resultsTitle = document.getElementById('products-results-title');
             const sortLabel = document.getElementById('products-sort-label');
+            const noResultsMessage = document.getElementById('no-results-search-message');
+            const noResultsWrapper = document.getElementById('no-results-search-wrapper');
+            const resetSearchBtn = document.getElementById('reset-search-btn');
+            const filterToggle = document.querySelector('.st-filter-toggle');
+            const filterBackdrop = document.querySelector('.st-filter-backdrop');
+            const filterSidebar = document.querySelector('.st-sidebar-filters');
+            const filterClose = document.querySelector('.st-filter-close');
             if (!grid) return;
+
+            function setFilterMenu(open) {
+                if (!filterSidebar) return;
+                filterSidebar.classList.toggle('is-open', open);
+                if (filterBackdrop) filterBackdrop.classList.toggle('is-visible', open);
+                document.body.classList.toggle('st-menu-open', open);
+            }
+
+            if (filterToggle) {
+                filterToggle.addEventListener('click', function () {
+                    const isOpen = filterSidebar && filterSidebar.classList.contains('is-open');
+                    setFilterMenu(!isOpen);
+                });
+            }
+
+            if (filterClose) {
+                filterClose.addEventListener('click', function () {
+                    setFilterMenu(false);
+                });
+            }
+
+            if (filterBackdrop) {
+                filterBackdrop.addEventListener('click', function () {
+                    setFilterMenu(false);
+                });
+            }
 
             const colorPalette = ['#111827', '#0047cc', '#ff6600', '#0ea5e9', '#16a34a', '#7c3aed'];
             const filters = {
                 category: '',
                 stock: '',
                 price: '',
-                sort: 'name-asc'
+                sort: 'name-asc',
+                q: ''
             };
             const paginationState = {
                 page: 1,
@@ -252,9 +331,21 @@
                 }
             }
 
+            function normalizeText(value) {
+                return String(value || '')
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9\s]/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            }
+
             function updateHeader(products) {
+                const hasActiveState = !!filters.q || !!filters.category || !!filters.stock || !!filters.price;
+
                 if (resultsTitle) {
-                    resultsTitle.textContent = products.length ? 'Productos' : 'No se encontraron resultados';
+                    resultsTitle.textContent = products.length ? 'Productos' : (filters.q ? 'Productos' : 'No se encontraron resultados');
                 }
                 if (sortLabel) {
                     const labels = {
@@ -264,6 +355,21 @@
                         'price-desc': 'Precio: mayor a menor'
                     };
                     sortLabel.textContent = labels[filters.sort] || 'Alfabético A-Z';
+                }
+                if (resetSearchBtn) {
+                    resetSearchBtn.style.display = hasActiveState ? 'inline-flex' : 'none';
+                }
+                if (noResultsWrapper && noResultsMessage) {
+                    const shouldShow = products.length === 0 && hasActiveState;
+                    noResultsWrapper.style.display = shouldShow ? 'block' : 'none';
+                    noResultsMessage.textContent = 'No se encontraron resultados para tu búsqueda.';
+                }
+            }
+
+            function scrollToProductsSection() {
+                const section = document.getElementById('productos-section');
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
 
@@ -311,6 +417,18 @@
                     if (typeSelect && typeSelect.options.length <= 1) populateCategories(categories);
 
                     let products = Array.isArray(data && data.products) ? data.products : [];
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const queryFromUrl = (urlParams.get('q') || '').trim();
+                    filters.q = queryFromUrl;
+
+                    if (filters.q) {
+                        const qNorm = normalizeText(filters.q);
+                        products = products.filter((product) => {
+                            const haystack = normalizeText([product.name, product.description, product.category].join(' '));
+                            return haystack.indexOf(qNorm) !== -1;
+                        });
+                    }
+
                     if (filters.stock === 'out-of-stock') {
                         products = products.filter((product) => Number(product.stock || 0) <= 0);
                     }
@@ -323,8 +441,11 @@
                     updateHeader(products);
 
                     if (!products.length) {
-                        grid.innerHTML = '<div class="st-empty-state" style="padding:20px;background:#fff;color:#444;border:1px solid #eee;">No hay productos disponibles con estos filtros.</div>';
+                        grid.innerHTML = '';
                         renderPagination(0);
+                        if (filters.q || filters.category || filters.stock || filters.price) {
+                            scrollToProductsSection();
+                        }
                         return;
                     }
 
@@ -339,6 +460,8 @@
                         const image = normalizeImage(product.image);
                         const label = category.length > 22 ? category.substring(0, 22) + '...' : category;
                         const title = name.length > 34 ? name.substring(0, 34) + '...' : name;
+                        const stock = Number(product.stock || 0);
+                        const description = String(product.description || '').trim() || 'Sin descripción disponible.';
                         return `
             <div class="st-product-card">
               <span class="st-badge">Ecológico</span>
@@ -351,19 +474,50 @@
               </div>
               <div>
                 <div class="st-price">${formatPrice(product.price)}</div>
-                <button class="st-btn-options" type="button">Información del producto</button>
-                <button class="st-btn-comprar" type="button">Añadir al carrito</button>
+                <button class="st-btn-options boton-info" type="button" data-image="${image}" data-title="${escapeHtml(name)}" data-description="${escapeHtml(description)}" data-stock="${stock}">Información del producto</button>
+                <button class="st-btn-comprar add-to-cart" type="button" data-id="${product.id || product.product_id || product.slug || name}" data-name="${escapeHtml(name)}" data-price="${Number(product.price || 0).toFixed(2)}" data-image="${image}">Añadir al carrito</button>
               </div>
             </div>
           `;
                     }).join('');
 
                     renderPagination(products.length);
+                    if (filters.q) {
+                        scrollToProductsSection();
+                    }
                 } catch (error) {
                     console.error('Error cargando productos:', error);
                     grid.innerHTML = '<div class="st-empty-state" style="padding:20px;background:#fff;color:#444;border:1px solid #eee;">No se pudieron cargar los productos.</div>';
                     renderPagination(0);
                 }
+            }
+
+            if (resetSearchBtn) {
+                resetSearchBtn.addEventListener('click', function () {
+                    filters.q = '';
+                    filters.category = '';
+                    filters.stock = '';
+                    filters.price = '';
+                    filters.sort = 'name-asc';
+                    paginationState.page = 1;
+
+                    if (typeSelect) typeSelect.value = '';
+                    if (stockSelect) stockSelect.value = '';
+                    if (priceSelect) priceSelect.value = '';
+                    if (sortSelect) sortSelect.value = 'name-asc';
+
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('q');
+                    history.replaceState({}, '', url);
+                    renderProducts();
+                });
+            }
+
+            if (noResultsWrapper) {
+                noResultsWrapper.style.display = 'none';
+            }
+            if (resetSearchBtn) {
+                resetSearchBtn.style.display = 'none';
             }
 
             if (typeSelect) {
@@ -401,18 +555,24 @@
             renderProducts();
         })();
         (function ($) {
-            $(document).on('click', '.boton-info', function (e) {
+            $(document).on('click', '.st-btn-options, .boton-info', function (e) {
                 var $btn = $(this);
                 var img = $btn.data('image') || '';
                 var title = $btn.data('title') || '';
                 var desc = $btn.data('description') || '';
                 var stock = typeof $btn.data('stock') !== 'undefined' ? Number($btn.data('stock')) : null;
+                const modalBtn = $('#courseModal .add-to-cart-from-modal');
+                modalBtn.attr('data-id', $btn.data('id') || $btn.attr('data-id') || title);
+                modalBtn.attr('data-name', title);
+                modalBtn.attr('data-price', $btn.data('price') || $btn.attr('data-price') || '0');
+                modalBtn.attr('data-image', img);
+
                 $('#courseModalLabel').text(title);
                 $('#courseModal .modal-image').attr('src', img);
                 $('#courseModal .modal-desc').text(desc);
                 if (stock === null) $('#courseModal .modal-stock').text('');
-                else if (stock > 0) { $('#courseModal .modal-stock').text('En stock: ' + stock).css('color', ''); }
-                else { $('#courseModal .modal-stock').text('Agotado Temporalmente').css('color', 'red'); }
+                else if (stock > 0) { $('#courseModal .modal-stock').text('En stock: ' + stock).css('color', '#166534'); }
+                else { $('#courseModal .modal-stock').text('Agotado Temporalmente').css('color', '#b91c1c'); }
                 $('#courseModal').modal('show');
             });
         })(jQuery);
