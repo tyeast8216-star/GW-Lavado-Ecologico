@@ -747,7 +747,14 @@ body.user-dashboard-page .side-card {
   border: 1px solid #e2e8f0;
   box-shadow: 0 16px 30px rgba(15, 23, 42, 0.04);
   max-width: 100%;
-  overflow: hidden;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+body.dashboard-page #products-section {
+  min-width: 0;
+  width: 100%;
 }
 
 body.dashboard-page .users-card table,
@@ -757,7 +764,12 @@ body.dashboard-page #purchases-table {
   width: 100%;
   max-width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
+}
+
+body.dashboard-page #users-table td:nth-child(5),
+body.dashboard-page #users-table td:nth-child(6) {
+  min-width: 180px;
 }
 
 body.dashboard-page .users-card td,
@@ -826,6 +838,116 @@ body.dashboard-page #purchases-table tbody tr:hover {
   background: #f8fff9;
 }
 
+body.dashboard-page .product-edit-image-box,
+body.dashboard-page .product-edit-actions,
+body.dashboard-page .product-edit-image-tools {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+}
+
+body.dashboard-page .product-edit-image-box {
+  flex-direction: column;
+  min-width: 200px;
+  width: 100%;
+  margin-right: 8px;
+}
+
+body.dashboard-page .product-edit-image-tools {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+body.dashboard-page .product-edit-image-tools .edit-p-file {
+  width: 100%;
+  min-width: 0;
+  padding: 6px;
+}
+
+body.dashboard-page .product-edit-image-tools .edit-p-upload {
+  width: 100%;
+  max-width: 140px;
+  align-self: flex-start;
+}
+
+body.dashboard-page .product-edit-actions {
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 180px;
+  width: 100%;
+  max-width: 260px;
+  gap: 12px;
+  padding-right: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+body.dashboard-page .product-edit-actions .btn {
+  width: auto;
+  min-width: 88px;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+body.dashboard-page #products-table td {
+  overflow: visible;
+  position: relative;
+  vertical-align: top;
+}
+
+body.dashboard-page #products-table td:nth-child(7) {
+  width: 430px;
+  min-width: 430px;
+  padding-right: 28px;
+}
+
+body.dashboard-page #products-table td:last-child {
+  width: 300px;
+  min-width: 260px;
+  padding-left: 28px;
+  padding-right: 10px;
+  margin-left: 10px;
+}
+
+body.dashboard-page #products-table {
+  min-width: 1100px;
+  table-layout: auto;
+}
+
+body.dashboard-page #products-table td:nth-child(7) {
+  width: auto;
+  min-width: 260px;
+  padding-right: 28px;
+}
+
+body.dashboard-page #products-table td:last-child {
+  width: auto;
+  min-width: 220px;
+  padding-right: 18px;
+  margin-left: 10px;
+}
+
+body.dashboard-page #products-table .edit-p-name,
+body.dashboard-page #products-table .edit-p-price,
+body.dashboard-page #products-table .edit-p-desc,
+body.dashboard-page #products-table .edit-p-category,
+body.dashboard-page #products-table .edit-p-stock,
+body.dashboard-page #products-table .edit-p-image,
+body.dashboard-page #products-table .edit-p-file {
+  min-width: 0;
+  width: 100%;
+}
+
+.product-edit-actions{
+  display:block !important;
+}
 body.user-dashboard-page .main-card h3,
 body.user-dashboard-page .side-card h5 {
   color: #0f172a;

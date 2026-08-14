@@ -389,32 +389,36 @@ function onEditClick(e){
   const isAdmin = tr.children[4].textContent.trim() === 'Sí';
   tr.innerHTML = `
     <td>${id}</td>
-    <td><input class="form-control form-control-sm edit-name" value="${name}"></td>
-    <td><input class="form-control form-control-sm edit-email" value="${email}"></td>
+    <td><input class="form-control form-control-sm edit-name" value="${name}" style="min-width:150px;height:38px;padding:8px 10px"></td>
+    <td><input class="form-control form-control-sm edit-email" value="${email}" style="min-width:180px;height:38px;padding:8px 10px"></td>
     <td style="min-width:260px">
-      <div style="display:flex;gap:6px;align-items:center">
-        <div class="phone-select" id="pf-phone-select-${id}" style="flex:0 0 180px">
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:220px">
+        <div class="phone-select" id="pf-phone-select-${id}" style="width:100%">
           <input type="hidden" class="edit-phone-code" id="pf-phone-code-${id}" value="+34">
-          <button type="button" class="phone-select-btn" aria-haspopup="listbox" aria-expanded="false">
+          <button type="button" class="phone-select-btn" aria-haspopup="listbox" aria-expanded="false" style="width:100%;justify-content:flex-start">
             <img src="https://flagcdn.com/24x18/es.png" alt="ES" loading="lazy">
             <span class="phone-text">España (+34)</span>
           </button>
           <ul class="phone-select-list" role="listbox" aria-labelledby="pf-phone-select-${id}"></ul>
         </div>
-        <input class="form-control form-control-sm edit-phone" style="flex:1" value="${phone}">
+        <input class="form-control form-control-sm edit-phone" value="${phone}" style="width:100%">
       </div>
       <div class="edit-phone-error" style="color:#b00020;display:none;font-size:12px;margin-top:4px"></div>
     </td>
-    <td>
-      <select class="form-control form-control-sm edit-admin">
+    <td style="min-width:120px;padding-left:12px;padding-right:12px">
+      <select class="form-control form-control-sm edit-admin" style="width:100%">
         <option value="0">No</option>
         <option value="1">Sí</option>
       </select>
     </td>
     <td>
-      <input type="password" placeholder="Nueva contraseña" class="form-control form-control-sm edit-pass" style="width:55%;display:inline-block;margin-right:6px" />
-      <button class="btn btn-sm btn-success save-btn">Guardar</button>
-      <button class="btn btn-sm btn-secondary cancel-btn">Cancelar</button>
+      <div style="display:flex;flex-direction:column;gap:8px;min-width:220px">
+        <input type="password" placeholder="Nueva contraseña" class="form-control form-control-sm edit-pass" style="width:100%" />
+        <div style="display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap">
+          <button class="btn btn-sm btn-success save-btn">Guardar</button>
+          <button class="btn btn-sm btn-secondary cancel-btn">Cancelar</button>
+        </div>
+      </div>
     </td>`;
   tr.querySelector('.edit-admin').value = isAdmin ? '1' : '0';
   // initialize phone code/select if phone has code
@@ -504,19 +508,12 @@ function onProdEdit(e){
   const tr = e.target.closest('tr'); const id = tr.dataset.id;
   const name = tr.querySelector('.prod-name').textContent;
   const price = tr.querySelector('.prod-price').textContent;
+  const desc = tr.dataset.desc || '';
   const cat = tr.querySelector('.prod-cat') ? tr.querySelector('.prod-cat').textContent : '';
   const stock = tr.querySelector('.prod-stock') ? tr.querySelector('.prod-stock').textContent : '0';
   const imgCell = tr.querySelector('.prod-image');
   const imgSrc = imgCell && imgCell.querySelector('img') ? imgCell.querySelector('img').src : '';
-  tr.innerHTML = `
-    <td>${id}</td>
-    <td><input class="form-control form-control-sm edit-p-name" value="${name}"></td>
-    <td><input class="form-control form-control-sm edit-p-price" value="${price}"></td>
-    <td><input class="form-control form-control-sm edit-p-category" value="${cat}"></td>
-    <td><input class="form-control form-control-sm edit-p-stock" value="${stock}"></td>
-    <td><input class="form-control form-control-sm edit-p-image" value="${imgSrc}"></td>
-    <td><button class="btn btn-sm btn-success save-p">Guardar</button> <button class="btn btn-sm btn-secondary cancel-p">Cancelar</button></td>`;
-  const desc = tr.dataset.desc || '';
+
   tr.innerHTML = `
     <td>${id}</td>
     <td><input class="form-control form-control-sm edit-p-name" value="${name}"></td>
@@ -525,14 +522,22 @@ function onProdEdit(e){
     <td><input class="form-control form-control-sm edit-p-category" value="${cat}"></td>
     <td><input class="form-control form-control-sm edit-p-stock" value="${stock}"></td>
     <td>
-      <input class="form-control form-control-sm edit-p-image" value="${escapeHtml(imgSrc)}" />
-      <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
-        <input type="file" accept="image/*" class="form-control form-control-sm edit-p-file" style="width:160px;padding:6px" />
-        <button class="btn btn-sm btn-secondary edit-p-upload">Subir</button>
-        <img class="edit-p-preview" src="${escapeHtml(imgSrc)}" style="height:36px;margin-left:6px;${imgSrc? 'display:inline-block' : 'display:none'}" />
+      <div class="product-edit-image-box">
+        <input class="form-control form-control-sm edit-p-image" value="${escapeHtml(imgSrc)}" />
+        <div class="product-edit-image-tools">
+          <input type="file" accept="image/*" class="form-control form-control-sm edit-p-file" />
+          <button class="btn btn-sm btn-secondary edit-p-upload">Subir</button>
+        </div>
+        <img class="edit-p-preview" src="${escapeHtml(imgSrc)}" style="height:36px;${imgSrc ? 'display:inline-block' : 'display:none'}" />
       </div>
     </td>
-    <td><button class="btn btn-sm btn-success save-p">Guardar</button> <button class="btn btn-sm btn-secondary cancel-p">Cancelar</button></td>`;
+    <td>
+      <div class="product-edit-actions">
+        <button class="btn btn-sm btn-success save-p">Guardar</button>
+        <button class="btn btn-sm btn-secondary cancel-p">Cancelar</button>
+      </div>
+    </td>`;
+
   tr.querySelector('.cancel-p').addEventListener('click', initDashboard);
   // wire upload preview and upload handler for this row
   const fileInputEl = tr.querySelector('.edit-p-file');
