@@ -95,6 +95,10 @@ body {
   background-color: #3cd81d;
 }
 
+.mobile-search-bar {
+  display: none;
+}
+
 /* 3. ENLACES DE NAVEGACIÓN */
 .nav-links {
   display: flex;
@@ -2608,6 +2612,47 @@ body.user-dashboard-page .btn-primary:hover {
     display: none;
   }
 
+  .mobile-bar{
+    position:fixed;
+    padding-top: 1px;
+    background-color: #fafafa;
+    height: 70px;
+    width: 100%;
+    z-index: 999;
+  }
+  .mobile-search-bar {
+    display: flex;
+    align-items: center;
+    width: calc(100% - 1.5rem);
+    max-width: 1200px;
+    margin: 10px auto 0.75rem;
+    padding: 0.35rem 0.5rem 0.35rem 1rem;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #f8fafc 0%, #edf6ff 100%);
+    border: 1px solid #dbf4ec;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05)
+  }
+
+  .mobile-search-bar input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.9rem;
+    color: #0f172a;
+  }
+
+  .mobile-search-bar input::placeholder {
+    color: #64748b;
+  }
+
+  .mobile-search-bar .search-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50% !important;
+    flex-shrink: 0;
+  }
+
   .navbar-container {
     border-bottom-width: 3px;
   }
@@ -2782,6 +2827,9 @@ body.user-dashboard-page .btn-primary:hover {
     font-size: 0.95rem;
   }
 
+  .content-text{
+    padding-top: 40px;
+  }
   .content .title {
     font-size: 3.5rem;
     max-width: 82vw;
